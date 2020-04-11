@@ -50,7 +50,8 @@ db.serialize(() => {
 
     });
     
-    db.run(`INSERT INTO investigadores ("correo","clave","nombre","apellido1","apellido2","organismo","genero","ciudad","pais","fechaNacimiento") VALUES ('areberuto@gmail.com','$2a$10$QCsH5c.1y.2JegHw5pQ7g.HTodErI97TiWrIrC14ngGOCD0vGvBQ.','Arberto','Pereinado','Rubioro','US','hombre','Sevilla','España','04-09-1993'), ('ausonia@gmail.com','$2a$10$iqxuHckIt9JaiqLTF3I8pOnpZbskHTotZvF.3UCCOpRrIR85j41uW', 'Sonia Aurelia', 'Márquez', 'Rovira', 'UV', 'mujer', 'Valencia', 'España','02-02-1990');`, function(err){
+    db.run(`INSERT INTO investigadores ("correo","clave","nombre","apellido1","apellido2","organismo","genero","ciudad","pais","fechaNacimiento") VALUES ('areberuto@gmail.com','$2a$10$QCsH5c.1y.2JegHw5pQ7g.HTodErI97TiWrIrC14ngGOCD0vGvBQ.','Arberto','Pereinado','Rubioro','Universidad de Sevilla','hombre','Sevilla','España','04-09-1993'), ('ausonia@gmail.com','$2a$10$iqxuHckIt9JaiqLTF3I8pOnpZbskHTotZvF.3UCCOpRrIR85j41uW', 'Sonia Aurelia', 'Márquez', 'Rovira', 'Universidad de Valencia', 'mujer', 'Valencia', 'España','02-02-1990'),
+    ('carlosruiman@gmail.com','$2a$10$QCsH5c.1y.2JegHw5pQ7g.HTodErI97TiWrIrC14ngGOCD0vGvBQ.', 'Carlos', 'Ruíz', 'Manila', 'Universidad de Barcelona', 'hombre', 'Barcelona', 'España','30-11-1970');`, function(err){
 
         if(err){
             console.log(err);
