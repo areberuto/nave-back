@@ -3,6 +3,7 @@ App proyecto integrado (back-end)
 
 # Running instructions
 
-npm install
+1) ```npm install```
+2) ```cd server```, ```node``` or ```nodemon appDB.js```
 
-then, cd server -> node or nodemon appDB
+Optional) To refresh database, run ```node seed.js```
