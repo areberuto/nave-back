@@ -10,7 +10,7 @@ fenomenosRouter.get('/', (req, res, next) => {
 
     //Prepara la consulta para obtener los fenómenos con el nombre y apellidos del investigador
 
-    let query = "SELECT f.*, i.nombre as nombreInvestigador, i.apellido1 as apellidoInv1, i.apellido2 as apellidoInv2 FROM fenomenos as f INNER JOIN investigadores as i ON f.investigadorId = i.id";
+    let query = "SELECT f.*, i.nombre as nombreInvestigador, i.apellido1 as apellidoInv1, i.apellido2 as apellidoInv2, c.categoria FROM fenomenos as f INNER JOIN investigadores as i ON f.investigadorId = i.id INNER JOIN categorias as c ON f.categoria = c.id";
 
     //Si la query lleva un parámetro idInv, se filtrará por idInv (para la funcionalidad de 'Mis fenómenos')
 

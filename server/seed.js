@@ -42,7 +42,7 @@ db.serialize(() => {
 
     });
 
-    db.run('CREATE TABLE IF NOT EXISTS fenomenos ("id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "investigadorId" INTEGER NOT NULL, "titulo" TEXT NOT NULL, "descripcionCorta" TEXT NOT NULL, "contenido" TEXT NOT NULL, "fecha" TEXT NOT NULL, "ciudad" TEXT NOT NULL, "pais" TEXT NOT NULL, "coordenadas" TEXT, "categoria" NUMBER, FOREIGN KEY("investigadorId") REFERENCES investigadores("id"), FOREIGN KEY("categoria") REFERENCES categorias("id"))', err => {
+    db.run('CREATE TABLE IF NOT EXISTS fenomenos ("id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "investigadorId" INTEGER NOT NULL, "titulo" TEXT NOT NULL, "descripcionCorta" TEXT NOT NULL, "contenido" TEXT NOT NULL, "fecha" TEXT NOT NULL, "ciudad" TEXT NOT NULL, "pais" TEXT NOT NULL, "latitud" NUMBER, "longitud" NUMBER, "categoria" NUMBER, FOREIGN KEY("investigadorId") REFERENCES investigadores("id"), FOREIGN KEY("categoria") REFERENCES categorias("id"))', err => {
 
         if(err){
             console.log(err);
@@ -60,7 +60,7 @@ db.serialize(() => {
         }
     });
 
-    db.run(`INSERT INTO categorias ("categoria") VALUES ('ufología'), ('psicofonías'), ('fantasmas');`, function(err){
+    db.run(`INSERT INTO categorias ("categoria") VALUES ('Ufología'), ('Psicofonías'), ('Fantasmas');`, function(err){
 
         if(err){
             console.log(err);
@@ -70,10 +70,10 @@ db.serialize(() => {
 
     });
 
-    db.run(`INSERT INTO fenomenos ("investigadorId","titulo","descripcionCorta","contenido","fecha","ciudad","pais","coordenadas","categoria") VALUES (1, 'El de las aceitunas abre a su hora hulio.', 'Increíble increíble El de las aceitunas abre a su hora. Increíble increíble El de las aceitunas abre a su hora.', 'Increíble increíble El de las aceitunas abre a su hora. Increíble increíble El de las aceitunas abre a su hora.Increíble increíble El de las aceitunas abre a su hora. Increíble increíble El de las aceitunas abre a su hora.Increíble increíble El de las aceitunas abre a su hora. Increíble increíble El de las aceitunas abre a su hora.Increíble increíble El de las aceitunas abre a su hora. Increíble increíble El de las aceitunas abre a su hora.','2015-04-01','Triana','España','123 6969',NULL), (2, 'Misterios en la Ciutat de la Sensia', 'En la ciudad de la ciencia pasaron cosas muy raras unos sonidos tio jarri pordio hulio ueueuewaawawioaiaoiwoaiwoi.', 'En la ciudad de la ciencia pasaron cosas muy raras unos sonidos tio jarri pordio hulio ueueuewaawawioaiaoiwoaiwoi. En la ciudad de la ciencia pasaron cosas muy raras unos sonidos tio jarri pordio hulio ueueuewaawawioaiaoiwoaiwoi. En la ciudad de la ciencia pasaron cosas muy raras unos sonidos tio jarri pordio hulio ueueuewaawawioaiaoiwoaiwoi.', '2018-11-25', 'Valencia', 'España', '-', NULL),
+    db.run(`INSERT INTO fenomenos ("investigadorId","titulo","descripcionCorta","contenido","fecha","ciudad","pais","latitud","longitud","categoria") VALUES (1, 'El de las aceitunas abre a su hora hulio.', 'Increíble increíble El de las aceitunas abre a su hora. Increíble increíble El de las aceitunas abre a su hora.', 'Increíble increíble El de las aceitunas abre a su hora. Increíble increíble El de las aceitunas abre a su hora.Increíble increíble El de las aceitunas abre a su hora. Increíble increíble El de las aceitunas abre a su hora.Increíble increíble El de las aceitunas abre a su hora. Increíble increíble El de las aceitunas abre a su hora.Increíble increíble El de las aceitunas abre a su hora. Increíble increíble El de las aceitunas abre a su hora.','2015-04-01','Triana','España', NULL, NULL,1), (2, 'Misterios en la Ciutat de la Sensia', 'En la ciudad de la ciencia pasaron cosas muy raras unos sonidos tio jarri pordio hulio ueueuewaawawioaiaoiwoaiwoi.', 'En la ciudad de la ciencia pasaron cosas muy raras unos sonidos tio jarri pordio hulio ueueuewaawawioaiaoiwoaiwoi. En la ciudad de la ciencia pasaron cosas muy raras unos sonidos tio jarri pordio hulio ueueuewaawawioaiaoiwoaiwoi. En la ciudad de la ciencia pasaron cosas muy raras unos sonidos tio jarri pordio hulio ueueuewaawawioaiaoiwoaiwoi.', '2018-11-25', 'Valencia', 'España', NULL, NULL, 2),
     (1, 'La calabaza que estaba to wena.', 'En el mercado de Valencia tio una calabaza hecha al horno de leña ou mama paranormal a tope el sabor.', 'En el mercado de Valencia tio una calabaza hecha al horno de leña ou mama paranormal a tope el sabor.
    En el mercado de Valencia tio una calabaza hecha al horno de leña ou mama paranormal a tope el sabor.
-   En el mercado de Valencia tio una calabaza hecha al horno de leña ou mama paranormal a tope el sabor.', '2020-12-31', 'Valencia', 'España', '2134', NULL);`, function(err){
+   En el mercado de Valencia tio una calabaza hecha al horno de leña ou mama paranormal a tope el sabor.', '2020-12-31', 'Valencia', 'España', NULL, NULL, 3);`, function(err){
 
         if(err){
             console.log(err);
