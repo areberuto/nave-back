@@ -89,7 +89,7 @@ fenomenosRouter.post('/', checkAuth, validFenomeno, compareIds, (req, res, next)
 
     let fenomeno = req.fenomeno;
 
-    db.run(`INSERT INTO fenomenos (investigadorId, titulo, descripcionCorta, contenido, fecha, ciudad, pais, coordenadas) VALUES (${fenomeno.investigadorId}, '${fenomeno.titulo}', '${fenomeno.descripcionCorta}', '${fenomeno.contenido}', '${fenomeno.fecha}', '${fenomeno.ciudad}', '${fenomeno.pais}', '${fenomeno.coordenadas}')`, function (err) {
+    db.run(`INSERT INTO fenomenos (investigadorId, titulo, descripcionCorta, contenido, fecha, ciudad, pais, latitud, longitud) VALUES (${fenomeno.investigadorId}, '${fenomeno.titulo}', '${fenomeno.descripcionCorta}', '${fenomeno.contenido}', '${fenomeno.fecha}', '${fenomeno.ciudad}', '${fenomeno.pais}', '${fenomeno.latitud}', '${fenomeno.longitud}')`, function (err) {
 
         if (err) {
 
@@ -116,7 +116,7 @@ fenomenosRouter.put('/', checkAuth, validFenomeno, compareIds, (req, res, next) 
 
     let fenomeno = req.fenomeno;
 
-    db.run(`UPDATE fenomenos SET titulo = '${fenomeno.titulo}', descripcionCorta = '${fenomeno.descripcionCorta}', contenido = '${fenomeno.contenido}', fecha = '${fenomeno.fecha}', ciudad = '${fenomeno.ciudad}', pais = '${fenomeno.pais}', coordenadas = '${fenomeno.coordenadas}' WHERE id = ${fenomeno.id}`, function (err) {
+    db.run(`UPDATE fenomenos SET titulo = '${fenomeno.titulo}', descripcionCorta = '${fenomeno.descripcionCorta}', contenido = '${fenomeno.contenido}', fecha = '${fenomeno.fecha}', ciudad = '${fenomeno.ciudad}', pais = '${fenomeno.pais}', latitud = '${fenomeno.latitud}, longitud = '${fenomeno.longitud}' WHERE id = ${fenomeno.id}`, function (err) {
 
         if (err) {
 

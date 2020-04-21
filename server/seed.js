@@ -26,7 +26,7 @@ db.serialize(() => {
 
     });
 
-    db.run('CREATE TABLE IF NOT EXISTS investigadores ("id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "correo" TEXT NOT NULL, "clave" TEXT NOT NULL, "nombre" TEXT NOT NULL, "apellido1" TEXT NOT NULL, "apellido2"	TEXT NOT NULL, "organismo" TEXT NOT NULL, "genero" TEXT NOT NULL, "ciudad" TEXT NOT NULL, "pais" TEXT, "fechaNacimiento" TEXT NOT NULL)', err => {
+    db.run('CREATE TABLE IF NOT EXISTS investigadores ("id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "correo" TEXT NOT NULL, "clave" TEXT NOT NULL, "nombre" TEXT NOT NULL, "apellido1" TEXT NOT NULL, "apellido2"	TEXT NOT NULL, "organismo" TEXT NOT NULL, "genero" TEXT NOT NULL, "ciudad" TEXT NOT NULL, "pais" TEXT NOT NULL, "fechaNacimiento" TEXT NOT NULL)', err => {
 
         if(err){
             console.log(err);

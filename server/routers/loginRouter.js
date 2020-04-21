@@ -1,5 +1,5 @@
 const express = require('express');
-const { validInvestigador, validLogin, validRefresh, secretKey } = require('../middleware/middleLogin');
+const { validInvestigador, validLogin, validRefresh, checkAuth, secretKey } = require('../middleware/middleLogin');
 const { db } = require('../sql/sql');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -17,8 +17,6 @@ loginRouter.post('/register', validInvestigador, (req, res, next) => {
 
     let salt = bcrypt.genSaltSync(10);
     let hash = bcrypt.hashSync(investigador.clave, salt);
-
-    console.log('hash', hash);
 
     db.run(`INSERT INTO investigadores (correo, clave, nombre, apellido1, apellido2, organismo, genero, ciudad, pais, fechaNacimiento) VALUES ('${investigador.correo}', '${hash}', '${investigador.nombre}', '${investigador.apellido1}', '${investigador.apellido2}', '${investigador.organismo}', '${investigador.genero}', '${investigador.ciudad}','${investigador.pais}', '${investigador.fechaNacimiento}')`, function (err) {
 
@@ -96,6 +94,48 @@ loginRouter.post('/refreshAuth', validRefresh, (req, res, next) => {
         isAdmin: false,
         email: req.email,
         hashedPass: req.hashedPass
+
+    });
+
+});
+
+loginRouter.post('/checkPassword', checkAuth, (req, res, next) => {
+
+    const claveInput = req.body.clave;
+    const idInv = req.decoded.sub;
+
+    db.get(`SELECT clave FROM investigadores WHERE id = ${idInv}`, (err, row) => {
+
+        if(err){
+
+            console.log(err);
+            return res.status(500).send();
+
+        } else {
+
+            if (!row) {
+
+                console.log('Recurso no encontrado.');
+                
+                return res.status(404).send();
+
+            }
+
+            const claveBD = row.clave;
+
+            const match = bcrypt.compareSync(claveInput, claveBD);
+
+            if(match){
+
+                res.send({match});
+
+            } else {
+
+                res.status(401).send();
+
+            }
+
+        }
 
     });
 

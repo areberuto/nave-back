@@ -1,6 +1,6 @@
 const express = require('express');
 const { db } = require('../sql/sql');
-
+const { checkIfInvExists } = require('../middleware/middleInvestigadores');
 
 let investigadoresRouter = express.Router()
 
@@ -98,6 +98,32 @@ investigadoresRouter.get('/', (req, res, next) => {
 
     }
 
+});
+
+investigadoresRouter.delete('/delete', checkIfInvExists, (req, res, next) => {
+
+    db.run(`DELETE FROM FENOMENOS WHERE investigadorId = ${req.idInv}`, function(err){
+
+        if(err){
+            console.log(err);
+            return next(err);
+        }
+
+        console.log('Fenómenos borrados:', this.changes);
+
+        db.run(`DELETE FROM INVESTIGADORES WHERE id = ${req.idInv}`, function(err){
+
+            if(err){
+                console.log(err);
+                return next(err);
+            }
+    
+            console.log('Investigadores borrados:', this.changes);
+            return res.send();
+
+        });
+
+    });
 
 });
 

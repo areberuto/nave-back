@@ -8,7 +8,7 @@ const validFenomeno = (req, res, next) => {
 
         let fenomeno = req.body.fenomeno;
 
-        let isInvalid = (!fenomeno.investigadorId || !fenomeno.titulo || !fenomeno.descripcionCorta || !fenomeno.contenido || !fenomeno.fecha || !fenomeno.ciudad || !fenomeno.pais);
+        let isInvalid = (!fenomeno.investigadorId || !fenomeno.titulo || !fenomeno.descripcionCorta || !fenomeno.contenido || !fenomeno.latitud || !fenomeno.longitud || !fenomeno.fecha || !fenomeno.ciudad || !fenomeno.pais);
 
         if (!isInvalid) {
 
