@@ -100,7 +100,11 @@ investigadoresRouter.get('/', (req, res, next) => {
 
 });
 
+//Check previously that researcher exists
+
 investigadoresRouter.delete('/delete', checkIfInvExists, (req, res, next) => {
+
+    //First delete phenomena from researcher
 
     db.run(`DELETE FROM FENOMENOS WHERE investigadorId = ${req.idInv}`, function(err){
 

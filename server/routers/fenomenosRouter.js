@@ -8,11 +8,11 @@ const fenomenosRouter = express.Router();
 
 fenomenosRouter.get('/', (req, res, next) => {
 
-    //Prepara la consulta para obtener los fenómenos con el nombre y apellidos del investigador
+    //Prepares query, returning full name of researcher
 
     let query = "SELECT f.*, i.nombre as nombreInvestigador, i.apellido1 as apellidoInv1, i.apellido2 as apellidoInv2, c.categoria FROM fenomenos as f INNER JOIN investigadores as i ON f.investigadorId = i.id INNER JOIN categorias as c ON f.categoria = c.id";
 
-    //Si la query lleva un parámetro idInv, se filtrará por idInv (para la funcionalidad de 'Mis fenómenos')
+    //If query has idInv parameter, it will filter results
 
     if (req.query.idInv) {
 
@@ -37,8 +37,7 @@ fenomenosRouter.get('/', (req, res, next) => {
 
     }
 
-    //Si la query lleva idFen, se traerá sólo el fenómeno con ese id (para llenar el formulario
-    //en la modificación de fenómenos).
+    //If query has idFen parameter, it will return that phenomena
 
     if (req.query.idFen) {
 
@@ -62,7 +61,7 @@ fenomenosRouter.get('/', (req, res, next) => {
 
     }    
 
-    //Si no lleva parámetros, nos traemos todo.
+    //If no parameters on query, return all rows
 
     db.all(query, (err, rows) => {
 
@@ -83,7 +82,7 @@ fenomenosRouter.get('/', (req, res, next) => {
 
 //POST
 
-//Previamente validamos con middleware que el usuario tenga un token y que el fenómeno a postear sea válido
+//Validate token, phenomena, and in case of update also validate ids
 
 fenomenosRouter.post('/', checkAuth, validFenomeno, compareIds, (req, res, next) => {
 
@@ -110,7 +109,7 @@ fenomenosRouter.post('/', checkAuth, validFenomeno, compareIds, (req, res, next)
 
 //PUT
 
-//Previamente validamos con middleware que el usuario tenga un token y que el fenómeno a postear sea válido
+//Validate token, phenomena, and in case of update also validate ids
 
 fenomenosRouter.put('/', checkAuth, validFenomeno, compareIds, (req, res, next) => {
 
@@ -138,15 +137,12 @@ fenomenosRouter.put('/', checkAuth, validFenomeno, compareIds, (req, res, next) 
 
 //DELETE
 
-//Previamente validamos con middleware que el usuario tenga un token válido
+//Validate token first
 
 fenomenosRouter.delete('/', checkAuth, (req, res, next) => {
 
     let id = Number(req.query.id);
     console.log(id);
-
-    //El callback será llamado con un error si hay un error en el delete, y
-    //si va todo bien tendrá en su this la propiedad changes con el número de filas afectadas
 
     db.run(`DELETE FROM fenomenos WHERE id = ${id}`, function (err) {
 

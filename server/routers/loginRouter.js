@@ -7,13 +7,13 @@ const loginRouter = express.Router();
 
 //POST
 
-//Previamente al registro de un usuario, validamos con middleware que tenga los datos requeridos
+//Validate if sign up data are valid
 
 loginRouter.post('/register', validInvestigador, (req, res, next) => {
 
     let investigador = req.body.investigador;
 
-    //Generamos el hash de su clave para guardarlo en la BD
+    //Generate hash for password
 
     let salt = bcrypt.genSaltSync(10);
     let hash = bcrypt.hashSync(investigador.clave, salt);
@@ -37,20 +37,20 @@ loginRouter.post('/register', validInvestigador, (req, res, next) => {
 
 });
 
-//Previamente validamos que el correo exista y la clave coincida con ese correo
+//Validate email and password previous to sign in
 
 loginRouter.post('/checkLogin', validLogin, (req, res, next) => {
 
-    //El primer parámetro de sign() es el payload, que se añadirá al payload del JWT.
-    //El segundo es la clave secreta para el hash, o la clave secreta del RSA.
-    //El tercero es para declarar el algoritmo usado, el tiempo de expiración y el sujeto del JWT (a quién identifica).
+    //First sign() parameter refers to JWT payload.
+    //Second parameter refers to secret signing key.
+    //Third parameter refers to used algorithm, expiring time and subject of token.
 
-    //El resultado será el token encriptado en Base64url
+    //Result equals Base64url encrypted token sent after sign in.
 
     let jwtBearerToken = jwt.sign({}, secretKey, {
 
         algorithm: 'HS256',
-        //En segundos
+        //Units: seconds
         expiresIn: 300,
         subject: req.idInv.toString()
 
@@ -68,20 +68,15 @@ loginRouter.post('/checkLogin', validLogin, (req, res, next) => {
 
 });
 
+//Generate new token, for page refreshing
+
 loginRouter.post('/refreshAuth', validRefresh, (req, res, next) => {
-
-    //El primer parámetro de sign() es el payload, que se añadirá al payload del JWT.
-    //El segundo es la clave secreta para el hash, o la clave secreta del RSA.
-    //El tercero es para declarar el algoritmo usado, el tiempo de expiración y el sujeto del JWT (a quién identifica).
-
-    //El resultado será el token encriptado en Base64url
 
     let jwtBearerToken = jwt.sign({
 
     }, secretKey, {
 
         algorithm: 'HS256',
-        //En segundos
         expiresIn: 300,
         subject: req.idInv.toString()
 
@@ -98,6 +93,8 @@ loginRouter.post('/refreshAuth', validRefresh, (req, res, next) => {
     });
 
 });
+
+//Validate password stored in client for auth refresh
 
 loginRouter.post('/checkPassword', checkAuth, (req, res, next) => {
 
