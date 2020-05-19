@@ -1,5 +1,5 @@
 const express = require('express');
-const { validInvestigador, validLogin, validRefresh, checkAuth, secretKey } = require('../middleware/middleLogin');
+const { validSignUp, validLogin, validRefresh, checkAuth, secretKey } = require('../middleware/middleLogin');
 const { db } = require('../sql/sql');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -9,7 +9,7 @@ const loginRouter = express.Router();
 
 //Validate if sign up data are valid
 
-loginRouter.post('/register', validInvestigador, (req, res, next) => {
+loginRouter.post('/register', validSignUp, (req, res, next) => {
 
     let investigador = req.body.investigador;
 

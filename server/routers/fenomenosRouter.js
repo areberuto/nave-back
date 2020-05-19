@@ -124,7 +124,7 @@ fenomenosRouter.put('/', checkAuth, validFenomeno, compareIds, (req, res, next) 
 
         } else {
 
-            console.log(`Inserción realizada con éxito.`)
+            console.log(`Actualización realizada con éxito.`)
             let rowCount = this.changes;
             res.send({ rowCount });
 

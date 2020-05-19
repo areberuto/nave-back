@@ -6,7 +6,7 @@ const secretKey = 'la-clave-mas-secreta-del-mundo-hulio';
 
 //Validación de los datos requeridos del investigador
 
-const validInvestigador = (req, res, next) => {
+const validSignUp = (req, res, next) => {
 
     console.log('Validando datos del investigador.');
 
@@ -223,4 +223,4 @@ const validRefresh = (req, res, next) => {
 
 }
 
-module.exports = { validInvestigador, validLogin, checkAuth, validRefresh, secretKey };
+module.exports = { validSignUp, validLogin, checkAuth, validRefresh, secretKey };

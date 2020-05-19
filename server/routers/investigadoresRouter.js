@@ -1,6 +1,9 @@
 const express = require('express');
 const { db } = require('../sql/sql');
-const { checkIfInvExists } = require('../middleware/middleInvestigadores');
+const { checkIfInvExists, validInvestigador } = require('../middleware/middleInvestigadores');
+const { checkAuth } = require('../middleware/middleLogin');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 let investigadoresRouter = express.Router()
 
@@ -32,7 +35,7 @@ investigadoresRouter.get('/', (req, res, next) => {
                 let investigador = row;
 
                 //Para no enviar el hash de la clave
-                
+
                 delete investigador.clave;
 
                 return res.send(investigador);
@@ -60,7 +63,7 @@ investigadoresRouter.get('/', (req, res, next) => {
                 if (!row) {
 
                     console.log('Recurso no encontrado en getInvestigadorId.');
-                    
+
                     return res.status(404).send();
 
                 }
@@ -100,28 +103,127 @@ investigadoresRouter.get('/', (req, res, next) => {
 
 });
 
+investigadoresRouter.put('/updatePwd', checkAuth, checkIfInvExists, (req, res, next) => {
+
+    console.log("Dentro de updatePwd");
+    const idInv = req.idInv;
+
+    if (!req.body.oldPwd || !req.body.newPwd) {
+
+        return res.status(400).send();
+
+    }
+
+    const oldPwd = req.body.oldPwd;
+    const newPwd = req.body.newPwd;
+
+    db.get(`SELECT clave FROM investigadores WHERE id = ${idInv}`, (err, row) => {
+
+        if (err) {
+
+            console.log(err);
+            return res.status(500).send();
+
+        } else {
+
+            if (!row) {
+
+                console.log('Recurso no encontrado.');
+
+                return res.status(404).send();
+
+            }
+
+            const claveBD = row.clave;
+
+            const match = bcrypt.compareSync(oldPwd, claveBD);
+
+            if (match) {
+
+                console.log("Coinciden");
+
+                let salt = bcrypt.genSaltSync(10);
+                let hash = bcrypt.hashSync(newPwd, salt);
+
+                db.run(`UPDATE INVESTIGADORES SET clave = '${hash}' WHERE ID = ${idInv}`, function (err) {
+
+                    if (err) {
+            
+                        console.log(`Error en la actualización: ${err}`);
+                        return next(err);
+            
+                    } else {
+            
+                        console.log(`Actualización realizada con éxito.`)
+                        let rowCount = this.changes;
+                        res.send({ rowCount, hashedPass: hash });
+            
+                    }
+            
+                })
+
+            } else {
+
+                console.log("No coinciden");
+
+            }
+
+        }
+
+    });
+
+});
+
+investigadoresRouter.put('/updateInv', checkAuth, validInvestigador, checkIfInvExists, (req, res, next) => {
+
+    const investigador = req.investigador;
+
+    console.log(investigador);
+
+
+    db.run(`UPDATE investigadores SET correo = '${investigador.correo}', nombre = '${investigador.nombre}', apellido1 = '${investigador.apellido1}', apellido2 = '${investigador.apellido2}', organismo = '${investigador.organismo}', genero = '${investigador.genero}', ciudad = '${investigador.ciudad}', pais = '${investigador.pais}', fechaNacimiento = '${investigador.fechaNacimiento}' WHERE id = ${investigador.id}`, function (err) {
+
+        if (err) {
+
+            console.log(`Error en la actualización: ${err}`);
+            return next(err);
+
+        } else {
+
+            console.log(`Actualización realizada con éxito.`)
+            let rowCount = this.changes;
+            res.send({ rowCount });
+
+        }
+
+    });
+
+
+
+});
+
 //Check previously that researcher exists
 
-investigadoresRouter.delete('/delete', checkIfInvExists, (req, res, next) => {
+investigadoresRouter.delete('/delete', checkAuth, checkIfInvExists, (req, res, next) => {
 
     //First delete phenomena from researcher
 
-    db.run(`DELETE FROM FENOMENOS WHERE investigadorId = ${req.idInv}`, function(err){
+    db.run(`DELETE FROM FENOMENOS WHERE investigadorId = ${req.idInv}`, function (err) {
 
-        if(err){
+        if (err) {
             console.log(err);
             return next(err);
         }
 
         console.log('Fenómenos borrados:', this.changes);
 
-        db.run(`DELETE FROM INVESTIGADORES WHERE id = ${req.idInv}`, function(err){
+        db.run(`DELETE FROM INVESTIGADORES WHERE id = ${req.idInv}`, function (err) {
 
-            if(err){
+            if (err) {
                 console.log(err);
                 return next(err);
             }
-    
+
             console.log('Investigadores borrados:', this.changes);
             return res.send();
 
