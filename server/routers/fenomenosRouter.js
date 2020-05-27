@@ -10,60 +10,122 @@ fenomenosRouter.get('/', (req, res, next) => {
 
     //Prepares query, returning full name of researcher
 
-    let query = "SELECT f.*, i.nombre as nombreInvestigador, i.apellido1 as apellidoInv1, i.apellido2 as apellidoInv2, c.categoria FROM fenomenos as f INNER JOIN investigadores as i ON f.investigadorId = i.id INNER JOIN categorias as c ON f.categoria = c.id";
+    let sql = "SELECT f.*, i.nombre as nombreInvestigador, i.apellido1 as apellidoInv1, i.apellido2 as apellidoInv2, c.categoria FROM fenomenos as f INNER JOIN investigadores as i ON f.investigadorId = i.id INNER JOIN categorias as c ON f.categoria = c.id";
+    
+    //Considerar LIKE = %value%
 
-    //If query has idInv parameter, it will filter results
+    console.log(req.query);
 
-    if (req.query.idInv) {
+    const queryparams = req.query;
 
-        query = query + ` WHERE i.id = ${req.query.idInv}`;
+    if(Object.keys(queryparams).length != 0){
 
-        db.all(query, (err, rows) => {
+        let idInvSql = "", ciudadSql = "", paisSql = "", fechaInicioSql = "", fechaFinSql = "", textoSql = "";
+        let startAnd = false;
 
-            if (err) {
+        sql += " WHERE "
 
-                console.log('Error en la lectura por idInv:', err);
+        if(queryparams.idInv){
 
-                return next(new Error(err));
+            idInvSql = "i.id IN (" + queryparams.idInv.toString() + ")";
+            
+            sql += idInvSql;
+            startAnd = true;
+
+        }
+
+        if(queryparams.ciudad){
+            
+            ciudadSql = "f.ciudad LIKE '%" + queryparams.ciudad + "%'";
+
+            if(!startAnd){
+
+                sql += ciudadSql;
+                startAnd = true;
+
+            } else {
+
+                sql += ` AND ${ciudadSql}`;
 
             }
 
-            console.log('Lectura por idInv realizada con éxito.');
-            res.send(rows);
+        }
 
-        });
+        if(queryparams.pais){
+            
+            paisSql = "f.pais LIKE '%" + queryparams.pais + "%'";
 
-        return;
+            if(!startAnd){
+
+                sql += paisSql;
+                startAnd = true;
+
+            } else {
+
+                sql += ` AND ${paisSql}`;
+                
+            }
+
+        }
+
+        if(queryparams.texto){
+            
+            textoSql = "(f.titulo LIKE '%" + queryparams.texto + "%' OR f.descripcion LIKE '%" + queryparams.texto + "%' OR f.contenido LIKE '%" + queryparams.texto + "%')";
+
+            if(!startAnd){
+
+                sql += textoSql;
+                startAnd = true;
+
+            } else {
+
+                sql += ` AND ${textoSql}`;
+                
+            }
+
+        }
+
+        if(queryparams.fechaInicio){
+
+            fechaInicioSql = `f.fecha >= '${queryparams.fechaInicio}'`;
+
+            if(!startAnd){
+
+                sql += fechaInicioSql;
+                startAnd = true;
+
+            } else {
+
+                sql += ` AND '${fechaInicioSql}'`;
+                
+            }
+
+        }
+
+        if(queryparams.fechaFin){
+
+            fechaFinSql = `f.fecha <= '${queryparams.fechaFin}'`;
+
+            if(!startAnd){
+
+                sql += fechaFinSql;
+                startAnd = true;
+
+            } else {
+
+                sql += ` AND '${fechaFinSq}'`;
+                
+            }
+
+        }
+
+        
 
     }
 
-    //If query has idFen parameter, it will return that phenomena
+    console.log(sql);
 
-    if (req.query.idFen) {
-
-        query = query + ` WHERE f.id = ${req.query.idFen}`;
-        db.get(query, (err, row) => {
-
-            if (err) {
-
-                console.log('Error en la lectura por idFen:', err);
-                // res.status(500).send();
-                return next(new Error(err));
-
-            }
-
-            console.log('Lectura por idFen realizada con éxito.');
-            res.send(row);
-
-        });
-
-        return;
-
-    }    
-
-    //If no parameters on query, return all rows
-
-    db.all(query, (err, rows) => {
+    db.all(sql, (err, rows) => {
 
         if (err) {
 
@@ -73,7 +135,7 @@ fenomenosRouter.get('/', (req, res, next) => {
 
         }
         
-        console.log('Lectura realizada con éxito.');
+        console.log('Lectura realizada con éxito.', `${rows.length} filas.`);
         res.send(rows);
 
     });

@@ -105,7 +105,6 @@ investigadoresRouter.get('/', (req, res, next) => {
 
 investigadoresRouter.put('/updatePwd', checkAuth, checkIfInvExists, (req, res, next) => {
 
-    console.log("Dentro de updatePwd");
     const idInv = req.idInv;
 
     if (!req.body.oldPwd || !req.body.newPwd) {
@@ -180,7 +179,6 @@ investigadoresRouter.put('/updateInv', checkAuth, validInvestigador, checkIfInvE
 
     console.log(investigador);
 
-
     db.run(`UPDATE investigadores SET correo = '${investigador.correo}', nombre = '${investigador.nombre}', apellido1 = '${investigador.apellido1}', apellido2 = '${investigador.apellido2}', organismo = '${investigador.organismo}', genero = '${investigador.genero}', ciudad = '${investigador.ciudad}', pais = '${investigador.pais}', fechaNacimiento = '${investigador.fechaNacimiento}' WHERE id = ${investigador.id}`, function (err) {
 
         if (err) {
@@ -225,7 +223,8 @@ investigadoresRouter.delete('/delete', checkAuth, checkIfInvExists, (req, res, n
             }
 
             console.log('Investigadores borrados:', this.changes);
-            return res.send();
+            let rowCount = this.changes;
+            res.send({ rowCount });
 
         });
 

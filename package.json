@@ -14,7 +14,9 @@
     "express-jwt": "^5.3.1",
     "jsonwebtoken": "^8.5.1",
     "morgan": "^1.10.0",
-    "nodemon": "^2.0.2",
+    "mysql": "^2.18.1",
+    "nodemailer": "^6.4.6",
+    "nodemon": "^2.0.4",
     "sqlite3": "^4.1.1"
   },
   "engines": {

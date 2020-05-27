@@ -18,6 +18,22 @@ db.serialize(() => {
 
     });
 
+    db.run("DROP TABLE IF EXISTS codigos_activacion", err => {
+
+        if(err){
+            console.log(err);
+        }
+
+    });
+
+    db.run('CREATE TABLE IF NOT EXISTS codigos_activacion ("id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "idInv" INTEGER NOT NULL, "email" TEXT NOT NULL, "codigo" TEXT NOT NULL)', err => {
+
+        if(err){
+            console.log(err);
+        }
+
+    });
+
     db.run("DROP TABLE IF EXISTS investigadores", err => {
 
         if(err){
@@ -26,7 +42,7 @@ db.serialize(() => {
 
     });
 
-    db.run('CREATE TABLE IF NOT EXISTS investigadores ("id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "correo" TEXT NOT NULL, "clave" TEXT NOT NULL, "nombre" TEXT NOT NULL, "apellido1" TEXT NOT NULL, "apellido2"	TEXT NOT NULL, "organismo" TEXT NOT NULL, "genero" TEXT NOT NULL, "ciudad" TEXT NOT NULL, "pais" TEXT NOT NULL, "fechaNacimiento" TEXT NOT NULL)', err => {
+    db.run('CREATE TABLE IF NOT EXISTS investigadores ("id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "correo" TEXT NOT NULL, "clave" TEXT NOT NULL, "nombre" TEXT NOT NULL, "apellido1" TEXT NOT NULL, "apellido2"	TEXT NOT NULL, "organismo" TEXT NOT NULL, "genero" TEXT NOT NULL, "ciudad" TEXT NOT NULL, "pais" TEXT NOT NULL, "fechaNacimiento" TEXT NOT NULL, "verificado" INTEGER DEFAULT 0 NOT NULL)', err => {
 
         if(err){
             console.log(err);
@@ -50,8 +66,8 @@ db.serialize(() => {
 
     });
     
-    db.run(`INSERT INTO investigadores ("correo","clave","nombre","apellido1","apellido2","organismo","genero","ciudad","pais","fechaNacimiento") VALUES ('areberuto@gmail.com','$2a$10$QCsH5c.1y.2JegHw5pQ7g.HTodErI97TiWrIrC14ngGOCD0vGvBQ.','Arberto','Pereinado','Rubioro','Universidad de Sevilla','hombre','Sevilla','España','04-09-1993'), ('ausonia@gmail.com','$2a$10$iqxuHckIt9JaiqLTF3I8pOnpZbskHTotZvF.3UCCOpRrIR85j41uW', 'Sonia Aurelia', 'Márquez', 'Rovira', 'Universidad de Valencia', 'mujer', 'Valencia', 'España','02-02-1990'),
-    ('carlosruiman@gmail.com','$2a$10$QCsH5c.1y.2JegHw5pQ7g.HTodErI97TiWrIrC14ngGOCD0vGvBQ.', 'Carlos', 'Ruíz', 'Manila', 'Universidad de Barcelona', 'hombre', 'Barcelona', 'España','30-11-1970');`, function(err){
+    db.run(`INSERT INTO investigadores ("correo","clave","nombre","apellido1","apellido2","organismo","genero","ciudad","pais","fechaNacimiento", "verificado") VALUES ('areberuto.dev@gmail.com','$2a$10$QCsH5c.1y.2JegHw5pQ7g.HTodErI97TiWrIrC14ngGOCD0vGvBQ.','Areberuto','Foo','Bar','Universidad de Sevilla','hombre','Sevilla','España','04-09-1993', 1), ('ausonia@gmail.com','$2a$10$QCsH5c.1y.2JegHw5pQ7g.HTodErI97TiWrIrC14ngGOCD0vGvBQ.', 'Sonia Aurelia', 'Márquez', 'Rovira', 'Universidad de Valencia', 'mujer', 'Valencia', 'España','02-02-1990', 1),
+    ('carlosruiman@gmail.com','$2a$10$QCsH5c.1y.2JegHw5pQ7g.HTodErI97TiWrIrC14ngGOCD0vGvBQ.', 'Carlos', 'Ruíz', 'Manila', 'Universidad de Barcelona', 'hombre', 'Barcelona', 'España','30-11-1970', 1);`, function(err){
 
         if(err){
             console.log(err);
@@ -70,10 +86,9 @@ db.serialize(() => {
 
     });
 
-    db.run(`INSERT INTO fenomenos ("investigadorId","titulo","descripcionCorta","contenido","fecha","ciudad","pais","latitud","longitud","categoria") VALUES (1, 'El de las aceitunas abre a su hora hulio.', 'Increíble increíble El de las aceitunas abre a su hora. Increíble increíble El de las aceitunas abre a su hora.', 'Increíble increíble El de las aceitunas abre a su hora. Increíble increíble El de las aceitunas abre a su hora.Increíble increíble El de las aceitunas abre a su hora. Increíble increíble El de las aceitunas abre a su hora.Increíble increíble El de las aceitunas abre a su hora. Increíble increíble El de las aceitunas abre a su hora.Increíble increíble El de las aceitunas abre a su hora. Increíble increíble El de las aceitunas abre a su hora.','2015-04-01','Triana','España', NULL, NULL,1), (2, 'Misterios en la Ciutat de la Sensia', 'En la ciudad de la ciencia pasaron cosas muy raras unos sonidos tio jarri pordio hulio ueueuewaawawioaiaoiwoaiwoi.', 'En la ciudad de la ciencia pasaron cosas muy raras unos sonidos tio jarri pordio hulio ueueuewaawawioaiaoiwoaiwoi. En la ciudad de la ciencia pasaron cosas muy raras unos sonidos tio jarri pordio hulio ueueuewaawawioaiaoiwoaiwoi. En la ciudad de la ciencia pasaron cosas muy raras unos sonidos tio jarri pordio hulio ueueuewaawawioaiaoiwoaiwoi.', '2018-11-25', 'Valencia', 'España', NULL, NULL, 2),
-    (1, 'La calabaza que estaba to wena.', 'En el mercado de Valencia tio una calabaza hecha al horno de leña ou mama paranormal a tope el sabor.', 'En el mercado de Valencia tio una calabaza hecha al horno de leña ou mama paranormal a tope el sabor.
-   En el mercado de Valencia tio una calabaza hecha al horno de leña ou mama paranormal a tope el sabor.
-   En el mercado de Valencia tio una calabaza hecha al horno de leña ou mama paranormal a tope el sabor.', '2020-12-31', 'Valencia', 'España', NULL, NULL, 3);`, function(err){
+    db.run(`INSERT INTO fenomenos ("investigadorId","titulo","descripcionCorta","contenido","fecha","ciudad","pais","latitud","longitud","categoria") VALUES (1, 'Gritos en la Mezquita de Córdoba.', 'Escalofriantes gritos de socorro escuchados, periodicamente, en el verano de 2004 en la famosa mezquita andaluza.', 'Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quasi fuga veniam et dolorum. Doloribus nostrum rerum unde similique iusto, placeat quia nesciunt vel, officiis necessitatibus numquam natus, nihil aspernatur! Facilis.
+    Delectus laudantium asperiores veritatis odio similique culpa facilis quidem deserunt consequuntur nulla nostrum deleniti sed accusantium dolor rem cupiditate, quis ducimus, magni iusto sapiente distinctio? .','2004-04-01','Córdoba','España', 37.878982, -4.779677, 1), (2, 'Misteriosas apariciones estelares sobre la Ciudad de la Ciencia', 'Testimonios de vecinos colindantes a la institución granadina reportan visualizar artefactos voladores sobre dicho edificio.', 'Dichas personas han reportado el avistamiento de objetos metálicos que emitían luces azul pálido sobrevolar el edificio cada lunes, durante dos semanas, a las doce de la ncohe. Escalofriante, horropilante, fantastartico cuanto menos. Un fenómeno digno de lorem ipsum.', '2018-11-25', 'Granada', 'España', 37.162177, -3.606841, 2),
+    (1, 'El pan que hablaba', 'En el mercado de Sant Cougat, un misterioso mercader porta un pan que habla', 'A dicho mercader se le preguntaron por los sucesos, y este, como siempre rodeado de curiosos espectadores, demostró que evidentemente, su pan, hablaba. "Acérquense," decía, "y toquen el pan: ¿cómo está", preguntaba. "Está blando, contestaba". Impresionante. A dicho mercader se le preguntaron por los sucesos, y este, como siempre rodeado de curiosos espectadores, demostró que evidentemente, su pan, hablaba. "Acérquense," decía, "y toquen el pan: ¿cómo está", preguntaba. "Está blando, contestaba". Impresionante.', '2017-12-29', 'Barcelona', 'España', 41.473080, 2.081366, 3);`, function(err){
 
         if(err){
             console.log(err);

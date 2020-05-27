@@ -1,8 +1,60 @@
 const { db } = require('../sql/sql');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
+const nodemailer = require('nodemailer');
 const secretKey = 'la-clave-mas-secreta-del-mundo-hulio';
+
+//Nodemailer
+
+const transporter = nodemailer.createTransport({
+
+    service: 'gmail',
+    auth: {
+
+        user: 'areberutodev@gmail.com',
+        pass: ''
+
+    }
+
+});
+
+const sendMail = (email, codGen, olvidada = false) => {
+
+    let mensaje;
+
+    if(!olvidada){
+
+        mensaje = `<div style='font-family: Arial, Helvetica, sans-serif; text-align: center; margin: 10px; padding: 20px'><h1>🔮 ¡Hola! 🔮</h1><h2>Bienvenido/a a la nave del misterio.</h2><p>Para empezar a utilizar la plataforma tendrás que verificar tu cuenta. Para hacer efectiva tu nueva clave, haz click en el enlace a continuación.</p><p>Si no te has registrado en nuestra página, por favor, ignora este mensaje.</p><a href='http://localhost:4200?codGen=${codGen}' type='button' href='_blank'>Verificar mi cuenta</a></div>`
+
+    } else {
+
+        mensaje = `<div style='font-family: Arial, Helvetica, sans-serif; text-align: center; margin: 10px; padding: 20px'><h1>🔮 ¡Hola! 🔮</h1><h2>Aquí tienes tu nueva contraseña.</h2><h3>${codGen}</h3><p>Hemos generado una nueva contraseña para que puedas entrar en nuestra plataforma. Haz click en el enlace para activarla, y establece de inmediato en <strong>Mi perfil</strong> una nueva contraseña.</p><p>Si no esperabas este correo, te recomendamos que modifiques tu contraseña actual para reforzar la seguridad de tu cuenta.</p><a href='http://localhost:4200?tmpClave=${codGen}' type='button' href='_blank'>Restablecer contraseña</a></div>`
+    }
+
+    const mailOptions = {
+
+        from: 'areberutodev@gmail.com',
+        to: email,
+        subject: 'Verifica tu cuenta de La Nave del Misterio',
+        html: mensaje
+
+    }
+
+    transporter.sendMail(mailOptions, function(error, info){
+
+        if (error) {
+
+          console.log(error);
+
+        } else {
+
+          console.log('Email enviado: ' + info.response);
+
+        }
+
+    });
+
+}
 
 //Validación de los datos requeridos del investigador
 
@@ -60,7 +112,7 @@ const validLogin = (req, res, next) => {
 
     }
 
-    db.get(`SELECT id, correo, clave FROM investigadores WHERE correo = '${email}'`, (err, row) => {
+    db.get(`SELECT id, correo, clave, verificado FROM investigadores WHERE correo = '${email}'`, (err, row) => {
 
         if(err){
 
@@ -90,7 +142,18 @@ const validLogin = (req, res, next) => {
                     req.email = email;
                     req.hashedPass = row.clave;
                     req.idInv = row.id;
-                    return next();
+
+                    console.log("Verificado", !!row.verificado);
+
+                    if(row.verificado){
+
+                        return next();
+
+                    } else {
+
+                        return res.status(401).send("Cuenta no verificada.");
+
+                    }
 
                 } else {
 
@@ -105,6 +168,24 @@ const validLogin = (req, res, next) => {
         }
 
     });
+
+}
+
+//Obtener string aleatoria
+
+const getCodGen = length => {
+
+    let codGen = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const chLength = characters.length;
+
+    for ( let i = 0; i < length; i++ ) {
+    
+        codGen += characters.charAt(Math.floor(Math.random() * chLength));
+    
+    }
+
+    return codGen;
 
 }
 
@@ -223,4 +304,4 @@ const validRefresh = (req, res, next) => {
 
 }
 
-module.exports = { validSignUp, validLogin, checkAuth, validRefresh, secretKey };
+module.exports = { getCodGen, sendMail, validSignUp, validLogin, checkAuth, validRefresh, secretKey };
