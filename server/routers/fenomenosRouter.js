@@ -1,6 +1,6 @@
 const express = require('express');
 const { validFenomeno, compareIds } = require('../middleware/middleFenomenos');
-const { db } = require('../sql/sql');
+const { getFenomenos, getCategorias, postFenomeno, updateFenomeno, deleteFenomeno } = require('../sql/queries');
 const { checkAuth } = require('../middleware/middleLogin');
 const fenomenosRouter = express.Router();
 
@@ -12,15 +12,11 @@ fenomenosRouter.get('/', (req, res, next) => {
 
     let sql = "SELECT f.*, i.nombre as nombreInvestigador, i.apellido1 as apellidoInv1, i.apellido2 as apellidoInv2, c.categoria FROM fenomenos as f INNER JOIN investigadores as i ON f.investigadorId = i.id INNER JOIN categorias as c ON f.categoria = c.id";
     
-    //Considerar LIKE = %value%
-
-    console.log(req.query);
-
     const queryparams = req.query;
 
     if(Object.keys(queryparams).length != 0){
 
-        let idInvSql = "", ciudadSql = "", paisSql = "", fechaInicioSql = "", fechaFinSql = "", textoSql = "";
+        let idInvSql = "", ciudadSql = "", paisSql = "", fechaInicioSql = "", fechaFinSql = "", textoSql = "", idFenSql = "";
         let startAnd = false;
 
         sql += " WHERE "
@@ -119,24 +115,52 @@ fenomenosRouter.get('/', (req, res, next) => {
 
         }
 
-        
+        if(queryparams.idFen){
+            
+            idFenSql = `f.id = ${queryparams.idFen}`;
+
+            if(!startAnd){
+
+                sql += idFenSql;
+                startAnd = true;
+
+            } else {
+
+                sql += ` AND ${idFenSql}`;
+                
+            }
+
+        }
 
     }
 
-    console.log(sql);
+    sql += " ORDER BY FECHA DESC";
+    
+    getFenomenos(sql).then(result => {
 
-    db.all(sql, (err, rows) => {
+        console.log("Lectura realizada con éxito:", result.length, "filas recibidas.");
+        return res.send(result);
 
-        if (err) {
+    }).catch(err => {
 
-            console.log('Error en la lectura:', err);
-            // res.status(500).send();
-            return next(new Error(err));
+        console.log("Error en la lectura:", err);
+        return next(err);
 
-        }
-        
-        console.log('Lectura realizada con éxito.', `${rows.length} filas.`);
-        res.send(rows);
+    });
+
+});
+
+fenomenosRouter.get("/categorias", (req, res, next) => {
+
+    getCategorias().then(result => {
+
+        console.log("Lectura realizada con éxito:", result.length, "filas recibidas.");
+        return res.send(result);
+
+    }).catch(err => {
+
+        console.log("Error en la lectura:", err);
+        return next(err);
 
     });
 
@@ -148,22 +172,17 @@ fenomenosRouter.get('/', (req, res, next) => {
 
 fenomenosRouter.post('/', checkAuth, validFenomeno, compareIds, (req, res, next) => {
 
-    let fenomeno = req.fenomeno;
+    const fenomeno = req.fenomeno;
 
-    db.run(`INSERT INTO fenomenos (investigadorId, titulo, descripcionCorta, contenido, fecha, ciudad, pais, latitud, longitud) VALUES (${fenomeno.investigadorId}, '${fenomeno.titulo}', '${fenomeno.descripcionCorta}', '${fenomeno.contenido}', '${fenomeno.fecha}', '${fenomeno.ciudad}', '${fenomeno.pais}', '${fenomeno.latitud}', '${fenomeno.longitud}')`, function (err) {
+    postFenomeno(fenomeno).then(() => {
 
-        if (err) {
+        console.log("Inserción realizada con éxito.");
+        return res.status(201).send();
 
-            console.log(`Error en la inserción: ${err}`);
-            return next(new Error(err));
+    }).catch(err => {
 
-
-        } else {
-
-            console.log(`Inserción realizada con éxito.`)
-            res.status(201).send({ status: 201 });
-
-        }
+        console.log("Error en la inserción:", err);
+        return next(err);
 
     });
 
@@ -175,25 +194,21 @@ fenomenosRouter.post('/', checkAuth, validFenomeno, compareIds, (req, res, next)
 
 fenomenosRouter.put('/', checkAuth, validFenomeno, compareIds, (req, res, next) => {
 
-    let fenomeno = req.fenomeno;
+    const fenomeno = req.fenomeno;
 
-    db.run(`UPDATE fenomenos SET titulo = '${fenomeno.titulo}', descripcionCorta = '${fenomeno.descripcionCorta}', contenido = '${fenomeno.contenido}', fecha = '${fenomeno.fecha}', ciudad = '${fenomeno.ciudad}', pais = '${fenomeno.pais}', latitud = '${fenomeno.latitud}, longitud = '${fenomeno.longitud}' WHERE id = ${fenomeno.id}`, function (err) {
+    const sql = `UPDATE fenomenos SET categoria = ${fenomeno.categoria}, titulo = '${fenomeno.titulo}', descripcionCorta = '${fenomeno.descripcionCorta}', contenido = '${fenomeno.contenido}', fecha = '${fenomeno.fecha}', ciudad = '${fenomeno.ciudad}', pais = '${fenomeno.pais}', latitud = ${fenomeno.latitud}, longitud = ${fenomeno.longitud} WHERE id = ${fenomeno.id}`;
 
-        if (err) {
+    updateFenomeno(sql).then((result) => {
 
-            console.log(`Error en la actualización: ${err}`);
-            return next(err);
+        console.log("Actualización realizada con éxito.");
+        return res.status(204).send();
 
-        } else {
+    }).catch(err => {
 
-            console.log(`Actualización realizada con éxito.`)
-            let rowCount = this.changes;
-            res.send({ rowCount });
-
-        }
+        console.log("Error en la actualización:", err);
+        return next(err);
 
     });
-
 
 });
 
@@ -204,23 +219,16 @@ fenomenosRouter.put('/', checkAuth, validFenomeno, compareIds, (req, res, next) 
 fenomenosRouter.delete('/', checkAuth, (req, res, next) => {
 
     let id = Number(req.query.id);
-    console.log(id);
+    
+    deleteFenomeno(id).then((result) => {
 
-    db.run(`DELETE FROM fenomenos WHERE id = ${id}`, function (err) {
+        console.log("Borrado realizado con éxito.");
+        return res.status(204).send();
 
-        if (err) {
+    }).catch(err => {
 
-            console.log('Error en el borrado.')
-            // res.status(500).send();
-            return next(new Error(err));
-
-        } else {
-
-            console.log('Borrado realizado con éxito.');
-            let rowCount = this.changes;
-            res.send({ rowCount });
-
-        }
+        console.log("Error en el borrado:", err);
+        return next(err);
 
     });
 

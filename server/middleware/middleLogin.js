@@ -1,4 +1,4 @@
-const { db } = require('../sql/sql');
+const { isValidRefresh, getInvestigadorByEmail } = require('../sql/queries');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
@@ -11,7 +11,8 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
 
-        user: 'areberutodev@gmail.com',
+        //Empty. User and pass for sender mail account.
+        user: '',
         pass: ''
 
     }
@@ -22,9 +23,9 @@ const sendMail = (email, codGen, olvidada = false) => {
 
     let mensaje;
 
-    if(!olvidada){
+    if (!olvidada) {
 
-        mensaje = `<div style='font-family: Arial, Helvetica, sans-serif; text-align: center; margin: 10px; padding: 20px'><h1>🔮 ¡Hola! 🔮</h1><h2>Bienvenido/a a la nave del misterio.</h2><p>Para empezar a utilizar la plataforma tendrás que verificar tu cuenta. Para hacer efectiva tu nueva clave, haz click en el enlace a continuación.</p><p>Si no te has registrado en nuestra página, por favor, ignora este mensaje.</p><a href='http://localhost:4200?codGen=${codGen}' type='button' href='_blank'>Verificar mi cuenta</a></div>`
+        mensaje = `<div style='font-family: Arial, Helvetica, sans-serif; text-align: center; margin: 10px; padding: 20px'><h1>🔮 ¡Hola! 🔮</h1><h2>Bienvenido/a a la nave del misterio.</h2><p>Para empezar a utilizar la plataforma tendrás que verificar tu cuenta.</p><p>Si no te has registrado en nuestra página, por favor, ignora este mensaje.</p><a href='http://localhost:4200?codGen=${codGen}' type='button' href='_blank'>Verificar mi cuenta</a></div>`
 
     } else {
 
@@ -40,15 +41,15 @@ const sendMail = (email, codGen, olvidada = false) => {
 
     }
 
-    transporter.sendMail(mailOptions, function(error, info){
+    transporter.sendMail(mailOptions, function (error, info) {
 
         if (error) {
 
-          console.log(error);
+            console.log(error);
 
         } else {
 
-          console.log('Email enviado: ' + info.response);
+            console.log("Email enviado.");
 
         }
 
@@ -56,36 +57,37 @@ const sendMail = (email, codGen, olvidada = false) => {
 
 }
 
+const checkIfMailExists = (req, res, next) => {
+
+    
+
+}
+
 //Validación de los datos requeridos del investigador
 
 const validSignUp = (req, res, next) => {
 
-    console.log('Validando datos del investigador.');
-
     if (req.body.investigador) {
 
-        let investigador = req.body.investigador;
+        const investigador = req.body.investigador;
 
-        let isInvalid = (!investigador.correo || !investigador.clave || !investigador.nombre || !investigador.apellido1 || !investigador.apellido2 || !investigador.organismo || !investigador.genero || !investigador.ciudad || !investigador.fechaNacimiento);
+        const isInvalid = (!investigador.correo || !investigador.clave || !investigador.nombre || !investigador.apellido1 || !investigador.apellido2 || !investigador.organismo || !investigador.genero || !investigador.ciudad || !investigador.fechaNacimiento);
 
         if (!isInvalid) {
 
-            console.log("Investigador válido.");
             req.investigador = investigador;
-            next();
+            return next();
 
         } else {
 
-            console.log("Investigador inválido.");
-            res.status(400).send();
+            res.status(400).send({message: "Error 400 - Hay datos incorrectos en relación al registro."});
             return;
-            
+
         }
 
     } else {
 
-    console.log('No existen datos del investigador.')
-    res.status(400).send();
+        return res.status(400).send({message: "Error 400 - No se han proporcionado datos para el registro."});
 
     }
 
@@ -97,77 +99,63 @@ const validLogin = (req, res, next) => {
 
     let email, clave;
 
-    if((req.body.email != '') && (req.body.clave != '')){
+    if ((req.body.email != '') && (req.body.clave != '')) {
 
         email = req.body.email;
         clave = req.body.clave;
 
-        console.log(`Datos recibidos para el check: ${email} y ${clave}.`);
-
     } else {
 
-        //Si faltan datos, enviamos código de error de mala petición 400
-        console.log('Faltan datos.');
-        return res.status(400).send();
+        return res.status(400).send({message: "Error 400 - Login inválido, faltan credenciales."});
 
     }
 
-    db.get(`SELECT id, correo, clave, verificado FROM investigadores WHERE correo = '${email}'`, (err, row) => {
+    getInvestigadorByEmail(email).then(result => {
 
-        if(err){
+        if (!result.length) {
 
-            //Si ha habido un error en la lectura, pasamos el error al errorHandler de Express
-            console.log('Error en la lectura de investigador por email.')
-            return next(err);
-
-        } else {
-
-            if(!row){
-
-                //Si no se ha encontrado por ese email, error 404 de vuelta
-                console.log('Recurso no encontrado en la lectura de investigador por email.');
-                return res.status(404).send();
-
-            } else {
-
-                //Comparamos la clave introducida con el hash guardado
-
-                let match = bcrypt.compareSync(clave, row.clave);
-                console.log('¿Coinciden las claves?', match);
-
-                //Si coinciden, añadimos a la req la propiedad idInv con la id del usuario
-
-                if(match){
-
-                    req.email = email;
-                    req.hashedPass = row.clave;
-                    req.idInv = row.id;
-
-                    console.log("Verificado", !!row.verificado);
-
-                    if(row.verificado){
-
-                        return next();
-
-                    } else {
-
-                        return res.status(401).send("Cuenta no verificada.");
-
-                    }
-
-                } else {
-
-                    console.log('Clave incorrecta para el email.');
-                    //Código unauthorized
-                    return res.status(401).send();
-
-                }
-
-            }
+            return res.status(404).send({message: "Error 404 - Recurso no encontrado."});
 
         }
 
-    });
+        const investigador = result[0];
+
+        const match = bcrypt.compareSync(clave, investigador.clave);
+        console.log('¿Coinciden las claves?', match);
+
+        //Si coinciden, añadimos a la req la propiedad idInv con la id del usuario
+
+        if (match) {
+
+            req.email = email;
+            req.hashedPass = investigador.clave;
+            req.idInv = investigador.id;
+            req.isAdmin = !!investigador.isAdmin;
+
+            console.log("Verificado", !!investigador.verificado);
+
+            if (investigador.verificado) {
+
+                return next();
+
+            } else {
+
+                return res.status(401).send({message: "Error 401 - Cuenta no verificada."});
+
+            }
+
+        } else {
+
+            return res.status(401).send({message: "Error 401 - Clave incorrecta."});
+
+        }
+
+    }).catch(err => {
+
+        console.log("Algo ha ido mal.");
+        return next(err);
+
+    })
 
 }
 
@@ -179,10 +167,10 @@ const getCodGen = length => {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     const chLength = characters.length;
 
-    for ( let i = 0; i < length; i++ ) {
-    
+    for (let i = 0; i < length; i++) {
+
         codGen += characters.charAt(Math.floor(Math.random() * chLength));
-    
+
     }
 
     return codGen;
@@ -193,115 +181,104 @@ const getCodGen = length => {
 
 const checkAuth = (req, res, next) => {
 
-    console.log('Pasando por checkAuth');
-
     //Si la petición tiene la cabecera de autorización, extraemos el token y lo comprobamos
 
-    if(req.headers.authorization){
+    if (req.headers.authorization) {
 
         const token = req.headers.authorization.split(" ")[1];
 
-        console.log('Comprobando token');
-        
+        console.log('Comprobando token...');
+
         jwt.verify(token, secretKey, (err, decoded) => {
-            
+
             //Si es inválido, respondemos con no autorizado.
 
-            if(err){
-        
-                console.log('Token inválido.');
-                return res.status(401).send();
-                
-            } 
-            
+            if (err) {
+
+                return res.status(401).send({message: "El token de sesión es inválido o ha expirado. Vuelve a iniciar sesión con tus credenciales."});
+
+            }
+
             //Si es válido, damos permiso para continuar
 
             else {
-        
+
                 console.log(decoded);
                 req.decoded = decoded;
                 return next();
-                
+
             }
-    
+
         });
 
     }
-    
+
     //Si no tiene cabecera de autorización, respondemos con no autorizado.
 
     else {
 
-        return res.status(401).send();
+        return res.status(401).send({message: "Error 401 - Falta token de autorización."});
 
     }
-    
+
 
 };
 
 const validRefresh = (req, res, next) => {
 
-    console.log('Inside validRefresh');
-
     let email, hashedPass;
 
-    if(req.body.email == "" || req.body.hashedPass == ""){
+    if (req.body.email == "" || req.body.hashedPass == "") {
 
-        return res.status(400).send();
+        return res.status(400).send({message: "Error 400 - Faltan credenciales para renovar la sesión."});
 
     }
 
     email = req.body.email;
     hashedPass = req.body.hashedPass;
 
-    db.get(`SELECT id, correo, clave FROM investigadores WHERE correo = '${email}'`, (err, row) => {
+    isValidRefresh(email).then(result => {
 
-        if(err){
+        if (!result.length) {
 
-            //Si ha habido un error en la lectura, pasamos el error al errorHandler de Express
-            console.log('Error en la lectura de investigador por email.')
-            return next(err);
-
-        } else {
-
-            if(!row){
-
-                //Si no se ha encontrado por ese email, error 404 de vuelta
-                console.log('Recurso no encontrado en la lectura de investigador por email.');
-                return res.status(404).send();
-
-            } else {
-
-                //Comparamos la clave introducida con el hash guardado
-
-                let match = hashedPass == row.clave;
-
-                console.log('¿Coinciden las claves?', match);
-
-                //Si coinciden, añadimos a la req la propiedad idInv con la id del usuario
-
-                if(match){
-
-                    req.idInv = row.id;
-                    req.email = email;
-                    req.hashedPass = hashedPass;
-
-                    return next();
-
-                } else {
-
-                    console.log('Clave incorrecta para el email.');
-                    //Código unauthorized
-                    return res.status(401).send();
-
-                }
-
-            }
+            //Si no se ha encontrado por ese email, error 404 de vuelta
+            console.log("Recurso no encontrado en la lectura de investigador por email.");
+            throw new Error("Recurso no encontrado.");
 
         }
 
-    });
+        //Comparamos la clave introducida con el hash guardado
+
+        const match = hashedPass == result[0].clave;
+
+        console.log('¿Coinciden las claves?', match);
+
+        //Si coinciden, añadimos a la req la propiedad idInv con la id del usuario
+
+        if (match) {
+
+            req.idInv = result[0].id;
+            req.isAdmin = !!result[0].isAdmin;
+            req.email = email;
+            req.hashedPass = hashedPass;
+
+            return next();
+
+        } else {
+
+            console.log("Clave incorrecta para el email.");
+
+            return res.status(401).send({message: "La clave no es correcta."});
+
+        }
+
+    }).catch(err => {
+
+        console.log("Algo ha ido mal.");
+        return next(err);
+
+    })
 
 }
 
-module.exports = { getCodGen, sendMail, validSignUp, validLogin, checkAuth, validRefresh, secretKey };
+module.exports = { getCodGen, sendMail, checkIfMailExists, validSignUp, validLogin, checkAuth, validRefresh, secretKey };

@@ -1,7 +1,7 @@
 const express = require('express');
-const { db } = require('../sql/sql');
 const { checkIfInvExists, validInvestigador } = require('../middleware/middleInvestigadores');
 const { checkAuth } = require('../middleware/middleLogin');
+const { getInvestigadores, getInvestigadorByEmail, getInvestigadorById, getClaveInvestigador, updateInvestigador, updateClave, deleteFenomenosByInv, deleteInvestigador } = require('../sql/queries');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -9,38 +9,29 @@ let investigadoresRouter = express.Router()
 
 investigadoresRouter.get('/', (req, res, next) => {
 
-    let query = req.query;
+    const query = req.query;
 
     if (query.hasOwnProperty('email')) {
 
-        db.get(`SELECT * FROM investigadores WHERE correo = '${query.email}'`, (err, row) => {
+        getInvestigadorByEmail(query.email).then(result => {
 
-            if (err) {
+            if (!result.length) {
 
-                console.log('Error en getInvestigadorByEmail.')
-                // res.status(500).send();
-                return next(err);
-
-
-            } else {
-
-                if (!row) {
-
-                    console.log('Recurso no encontrado en getInvestigadorByEmail.');
-                    // res.status(404).send();
-                    return next(err);
-
-                }
-
-                let investigador = row;
-
-                //Para no enviar el hash de la clave
-
-                delete investigador.clave;
-
-                return res.send(investigador);
+                return res.send(result);
 
             }
+
+            const investigador = result[0];
+
+            //Para no enviar el hash de la clave
+
+            delete investigador.clave;
+
+            return res.send(investigador);
+
+        }).catch(err => {
+
+            return next(err);
 
         });
 
@@ -48,56 +39,44 @@ investigadoresRouter.get('/', (req, res, next) => {
 
     else if (query.hasOwnProperty('id')) {
 
-        //Hay que blindar aquí la password
+        getInvestigadorById(query.id).then(result => {
 
-        db.get(`SELECT * FROM investigadores WHERE id = '${query.id}'`, (err, row) => {
+            if (!result.length) {
 
-            if (err) {
-
-                console.log('Error en getInvestigadorById.')
-
-                return next(err);
-
-            } else {
-
-                if (!row) {
-
-                    console.log('Recurso no encontrado en getInvestigadorId.');
-
-                    return res.status(404).send();
-
-                }
-
-                let investigador = row;
-
-                //Para no enviar el hash de la clave
-
-                delete investigador.clave;
-
-                return res.send(investigador);
+                const msg = "Error 404 - Investigador no encontrado."
+                return res.status(404).send({msg});
 
             }
 
-        })
+            const investigador = result[0];
+
+            //Para no enviar el hash de la clave
+
+            delete investigador.clave;
+
+            return res.send(investigador);
+
+        }).catch(err => {
+
+            return next(err);
+
+        });
 
     } else {
 
-        db.all(`SELECT * FROM INVESTIGADORES`, (err, rows) => {
+        getInvestigadores().then(result => {
 
-            if (err) {
+            const investigadores = result;
 
-                return next(err);
+            investigadores.forEach(inv => delete inv.clave);
 
-            } else {
+            return res.send(investigadores);
 
-                let investigadores = rows;
-                investigadores.forEach(inv => delete inv.clave);
+        }).catch(err => {
 
-                return res.send(investigadores);
+            return next(err);
 
-            }
-
-        })
+        });
 
     }
 
@@ -109,65 +88,48 @@ investigadoresRouter.put('/updatePwd', checkAuth, checkIfInvExists, (req, res, n
 
     if (!req.body.oldPwd || !req.body.newPwd) {
 
-        return res.status(400).send();
+        const message = "Error 400 - Falta información para actualizar la contraseña.";
+        return res.status(400).send({message});
 
     }
 
     const oldPwd = req.body.oldPwd;
     const newPwd = req.body.newPwd;
 
-    db.get(`SELECT clave FROM investigadores WHERE id = ${idInv}`, (err, row) => {
+    getClaveInvestigador(idInv).then(result => {
 
-        if (err) {
+        if (!Object.keys(result[0]).length) {
 
-            console.log(err);
-            return res.status(500).send();
+            throw new Error('Recurso no encontrado');
+
+        }
+
+        const claveBD = result[0].clave;
+        const match = bcrypt.compareSync(oldPwd, claveBD);
+
+        if (match) {
+
+            let salt = bcrypt.genSaltSync(10);
+            let hash = bcrypt.hashSync(newPwd, salt);
+
+            return updateClave(hash, idInv);
 
         } else {
 
-            if (!row) {
-
-                console.log('Recurso no encontrado.');
-
-                return res.status(404).send();
-
-            }
-
-            const claveBD = row.clave;
-
-            const match = bcrypt.compareSync(oldPwd, claveBD);
-
-            if (match) {
-
-                console.log("Coinciden");
-
-                let salt = bcrypt.genSaltSync(10);
-                let hash = bcrypt.hashSync(newPwd, salt);
-
-                db.run(`UPDATE INVESTIGADORES SET clave = '${hash}' WHERE ID = ${idInv}`, function (err) {
-
-                    if (err) {
-            
-                        console.log(`Error en la actualización: ${err}`);
-                        return next(err);
-            
-                    } else {
-            
-                        console.log(`Actualización realizada con éxito.`)
-                        let rowCount = this.changes;
-                        res.send({ rowCount, hashedPass: hash });
-            
-                    }
-            
-                })
-
-            } else {
-
-                console.log("No coinciden");
-
-            }
+            console.log("No coinciden las claves.");
+            throw new Error("No coinciden las claves.");
 
         }
+
+    }).then(result => {
+
+        console.log(`Actualización realizada con éxito.`);
+        return res.send({ hashedPass: result.hash });
+
+    }).catch(err => {
+
+        console.log("Algo ha ido mal al obtener/actualizar la clave.")
+        return next(err);
 
     });
 
@@ -177,26 +139,16 @@ investigadoresRouter.put('/updateInv', checkAuth, validInvestigador, checkIfInvE
 
     const investigador = req.investigador;
 
-    console.log(investigador);
+    updateInvestigador(investigador).then(result => {
 
-    db.run(`UPDATE investigadores SET correo = '${investigador.correo}', nombre = '${investigador.nombre}', apellido1 = '${investigador.apellido1}', apellido2 = '${investigador.apellido2}', organismo = '${investigador.organismo}', genero = '${investigador.genero}', ciudad = '${investigador.ciudad}', pais = '${investigador.pais}', fechaNacimiento = '${investigador.fechaNacimiento}' WHERE id = ${investigador.id}`, function (err) {
+        return res.status(201).send(result);
 
-        if (err) {
+    }, err => {
 
-            console.log(`Error en la actualización: ${err}`);
-            return next(err);
-
-        } else {
-
-            console.log(`Actualización realizada con éxito.`)
-            let rowCount = this.changes;
-            res.send({ rowCount });
-
-        }
+        console.log(err);
+        return next(err);
 
     });
-
-
 
 });
 
@@ -206,27 +158,30 @@ investigadoresRouter.delete('/delete', checkAuth, checkIfInvExists, (req, res, n
 
     //First delete phenomena from researcher
 
-    db.run(`DELETE FROM FENOMENOS WHERE investigadorId = ${req.idInv}`, function (err) {
+    const idInv = req.query.idInv;
+    
+    deleteFenomenosByInv(idInv).then((result) => {
 
-        if (err) {
-            console.log(err);
-            return next(err);
-        }
+        console.log("Borrado de fenómenos - OK");
+        return deleteInvestigador(idInv);
 
-        console.log('Fenómenos borrados:', this.changes);
+    }, err => {
 
-        db.run(`DELETE FROM INVESTIGADORES WHERE id = ${req.idInv}`, function (err) {
+        console.log("Error en el borrado de fenómenos:", err);
+        throw new Error(err);
 
-            if (err) {
-                console.log(err);
-                return next(err);
-            }
+    }).then((result) => {
 
-            console.log('Investigadores borrados:', this.changes);
-            let rowCount = this.changes;
-            res.send({ rowCount });
+        console.log("Investigadores borrados:", result.affectedRows);
+    
+        const rowCount = result.affectedRows;
+    
+        return res.status(201).send({rowCount});
 
-        });
+    }, err => {
+
+        console.log("Error en el borrado:", err);
+        return next(err);
 
     });
 

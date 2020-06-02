@@ -1,31 +1,26 @@
-const { db } = require('../sql/sql');
+const { getInvestigadorById } = require('../sql/queries');
 
 //GET
 
 const checkIfInvExists = (req, res, next) => {
 
     const idInv = req.query.idInv;
-    
-    db.get(`SELECT * FROM INVESTIGADORES WHERE id = ${idInv}`, (err, row) => {
 
-        if(err){
-            
-            console.log(err);
-            return next(err);
-            
-        } else {
+    getInvestigadorById(idInv).then(result => {
 
-            if(!row){
+        if(!result.length){
 
-                return res.status(404).send();
+            return res.status(404).send({message: "Error 404 - Recurso no encontrado."});
 
-            }
-
-            req.idInv = req.query.idInv;
-            
-            return next();
-            
         }
+
+        req.idInv = idInv;
+            
+        return next();
+
+    }, err => {
+
+        return next(err);
 
     });
 
@@ -45,20 +40,18 @@ const validInvestigador = (req, res, next) => {
 
             console.log("Investigador válido.");
             req.investigador = investigador;
-            next();
+            return next();
 
         } else {
 
             console.log("Investigador inválido.");
-            res.status(400).send();
-            return;
+            return res.status(400).send({message: "Error 400 - Datos del investigador inválidos."});
             
         }
 
     } else {
 
-    console.log('No existen datos del investigador.')
-    res.status(400).send();
+        return res.status(400).send({message: "Error 400 - No existen datos del investigador."});
 
     }
 

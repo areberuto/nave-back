@@ -27,4 +27,4 @@ app.use('/investigadores', investigadoresRouter);
 
 //Start
 
-app.listen(PORT, () => console.log(`Listening on ${PORT}.`));
+app.listen(PORT, () => console.log(`Server listening on PORT ${PORT}.`));

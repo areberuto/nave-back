@@ -1,6 +1,6 @@
 const express = require('express');
-const { getCodGen, sendMail, validSignUp, validLogin, validRefresh, checkAuth, secretKey } = require('../middleware/middleLogin');
-const { db } = require('../sql/sql');
+const { getCodGen, sendMail, checkIfMailExists, validSignUp, validLogin, validRefresh, checkAuth, secretKey } = require('../middleware/middleLogin');
+const { registerInvestigador, getInvestigadorById, getInvestigadorByEmail, updateClave, addCodigoActivacion, getCodgenInfo, updateVerificacion, deleteCodigoByIdInv } = require('../sql/queries');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const loginRouter = express.Router();
@@ -9,65 +9,45 @@ const loginRouter = express.Router();
 
 //Validate if sign up data are valid
 
-loginRouter.post('/register', validSignUp, (req, res, next) => {
+loginRouter.post('/register', checkIfMailExists, validSignUp, (req, res, next) => {
 
-    let investigador = req.body.investigador;
-
+    const investigador = req.body.investigador;
     //Generate hash for password
 
     const salt = bcrypt.genSaltSync(10);
     const hash = bcrypt.hashSync(investigador.clave, salt);
 
-    db.run(`INSERT INTO investigadores (correo, clave, nombre, apellido1, apellido2, organismo, genero, ciudad, pais, fechaNacimiento, verificado) VALUES ('${investigador.correo}', '${hash}', '${investigador.nombre}', '${investigador.apellido1}', '${investigador.apellido2}', '${investigador.organismo}', '${investigador.genero}', '${investigador.ciudad}','${investigador.pais}', '${investigador.fechaNacimiento}', 0)`, function (err) {
+    registerInvestigador(investigador, hash).then(result => {
 
-        if (err) {
+        //Cuando se ejecuta el then, el stack ha liberado las variables del bloque porque es asíncrono.
+        console.log("Inserción realizada con éxito.");
+        return getInvestigadorByEmail(result.correo);
 
-            console.log(`Error en la inserción: ${err}`);
-            return next(err);
+    }, err => {
 
-        } else {
+        throw new Error(err);
 
-            console.log(`Inserción realizada con éxito.`);
+    }).then(result => {
 
-            db.get(`SELECT id FROM investigadores WHERE correo = '${investigador.correo}'`, (err, row) => {
+        const idInsert = result[0].id;
+        const codGen = getCodGen(40);
 
-                if (err) {
+        return addCodigoActivacion(idInsert, result[0].correo, codGen);
 
-                    console.log("Error en la lectura:", err);
-                    return next(err);
+    }, err => {
 
-                }
+        throw new Error(err);
 
-                else {
+    }).then(result => {
 
-                    const idInv = row.id;
-                    console.log("idInv", idInv);
-                    console.log("rowId", row.id);
-                    codGen = getCodGen(40);
+        console.log("Inserción de código realizada con éxito.");
+        sendMail(result.email, result.codGen);
+        return res.status(201).send();
 
-                    db.run(`INSERT INTO codigos_activacion (idInv, email, codigo) VALUES ('${idInv}', '${investigador.correo}', '${codGen}')`, function (err) {
+    }).catch(err => {
 
-                        if (err) {
-
-                            console.log(`Error en la inserción: ${err}`);
-                            return next(new Error(err));
-
-                        }
-
-                        else {
-
-                            sendMail(investigador.correo, codGen);
-                            res.status(201).send();
-
-                        }
-
-                    });
-
-                }
-
-            });
-
-        }
+        console.log("Algo ha ido mal. - ", err);
+        return next(err);
 
     });
 
@@ -79,117 +59,81 @@ loginRouter.post("/verify", (req, res, next) => {
 
     if (!req.body.codGen) {
 
-        return res.status(400).send();
+        return res.status(400).send({message: "Error 400 - El código de verificación no se ha proporcionado."});
 
     }
 
     const codGen = req.body.codGen;
 
-    db.get(`SELECT * FROM codigos_activacion WHERE codigo = '${codGen}'`, (err, row) => {
+    getCodgenInfo(codGen).then(result => {
 
-        if (err) {
+        if (!result.length) {
 
-            console.log("Ha ocurrido un error:", err);
-            return next(err);
-
-        } else {
-
-            if (row.codigo == codGen) {
-
-                db.run(`UPDATE investigadores SET verificado = '1' WHERE ID = ${row.idInv}`, function (err) {
-
-                    if (err) {
-
-                        console.log("Error en la actualización:", err);
-                        return next(err);
-
-                    } else {
-
-                        const rowCount = this.changes;
-                        console.log("Actualización de", rowCount, "filas");
-
-                        db.run(`DELETE FROM codigos_activacion WHERE idInv = ${row.idInv}`, function (err) {
-
-                            if (err) {
-
-                                console.log("Error en el borrado:", err);
-                                return next(err);
-
-                            } else {
-
-                                console.log("Verificación realizada con éxito. Código de activación borrado.")
-                                return res.status(201).send();
-
-                            }
-
-                        })
-
-                    }
-
-                });
-
-            }
+            throw new Error();
 
         }
 
+        if (result[0].codigo == codGen) {
+
+            return updateVerificacion(result[0].idInv);
+
+        }
+
+    }).then(idInv => {
+
+        console.log("Verificación actualizada.")
+        return deleteCodigoByIdInv(idInv);
+
+    }).then(result => {
+
+        return res.status(201).send();
+
+    }).catch(err => {
+
+        console.log("Algo ha ido mal.");
+        return next(err);
+
     });
 
-})
+});
 
 //Enviar correo para restablecer contraseña
 
-loginRouter.post('/pwOlvidada', (req, res) => {
-
-    console.log(req.body);
+loginRouter.post('/pwOlvidada', (req, res, next) => {
 
     if (!req.body.email) {
 
-        return res.status(400).send();
+        return res.status(400).send({message: "Error 400 - El correo no se ha proporcionado."});
 
     }
 
     const correo = req.body.email;
 
-    db.get(`SELECT * FROM investigadores WHERE correo = '${correo}'`, (err, row) => {
+    getInvestigadorByEmail(correo).then(result => {
 
-        if (err) {
+        if (!result.length) {
 
-            console.log("Error en el SELECT:", err);
-            return next(err);
-
-        } else {
-
-            if (row) {
-
-                //Menor seguridad, pero es una clave temporal.
-                const codGen = getCodGen(40);
-
-                db.run(`INSERT INTO codigos_activacion (idInv, email, codigo) VALUES ('${row.id}', '${correo}', '${codGen}')`, function (err) {
-
-                    if (err) {
-
-                        console.log(`Error en la inserción: ${err}`);
-                        return next(new Error(err));
-
-                    }
-
-                    else {
-
-                        sendMail(correo, codGen, true);
-                        res.status(201).send();
-
-                    }
-
-                });
-
-            } else {
-
-                return res.status(404).send("No hay ninguna cuenta asociada a ese correo.");
-
-            }
+            console.log("Recurso no encontrado en getInvestigadorByEmail.");
+            throw new Error();
 
         }
-    })
+
+        const codGen = getCodGen(40);
+
+        return addCodigoActivacion(result[0].id, result[0].correo, codGen);
+
+    }).then(result => {
+
+        console.log("Inserción de código realizada con éxito.");
+        sendMail(result.email, result.codGen, true);
+
+        return res.status(201).send();
+
+    }).catch(err => {
+
+        return next(err);
+
+    });
 
 });
 
@@ -197,7 +141,7 @@ loginRouter.post('/pwOlvidada', (req, res) => {
 
 loginRouter.post("/resetPwd", (req, res) => {
 
-    if(!req.body.tmpClave || !req.body.tmpClaveSHA){
+    if (!req.body.tmpClave || !req.body.tmpClaveSHA) {
 
         return res.status(400).send();
 
@@ -206,57 +150,36 @@ loginRouter.post("/resetPwd", (req, res) => {
     const tmpClave = req.body.tmpClave;
     const tmpClaveSHA = req.body.tmpClaveSHA;
 
-    console.log("tmpClave recibida", tmpClave)
+    getCodgenInfo(tmpClave).then(result => {
 
-    db.get(`SELECT * FROM codigos_activacion WHERE codigo = '${tmpClave}'`, (err, row) => {
+        if (!result.length) {
 
-        if (err) {
-
-            console.log("Ha ocurrido un error:", err);
-            return next(err);
-
-        } else {
-
-            if (row.codigo == tmpClave) {
-
-                const salt = bcrypt.genSaltSync(10);
-                const hash = bcrypt.hashSync(tmpClaveSHA, salt);
-
-                db.run(`UPDATE investigadores SET clave = '${hash}' WHERE ID = ${row.idInv}`, function (err) {
-
-                    if (err) {
-
-                        console.log("Error en la actualización:", err);
-                        return next(err);
-
-                    } else {
-
-                        const rowCount = this.changes;
-                        console.log("Actualización de", rowCount, "filas");
-
-                        db.run(`DELETE FROM codigos_activacion WHERE idInv = ${row.idInv}`, function (err) {
-
-                            if (err) {
-
-                                console.log("Error en el borrado:", err);
-                                return next(err);
-
-                            } else {
-
-                                console.log("Reseteo de clave realizado con éxito. Registro de código borrado.")
-                                return res.status(201).send();
-
-                            }
-
-                        });
-
-                    }
-
-                });
-
-            }
+            throw new Error();
 
         }
+
+        if (result[0].codigo == tmpClave) {
+
+            const salt = bcrypt.genSaltSync(10);
+            const hash = bcrypt.hashSync(tmpClaveSHA, salt);
+
+            return updateClave(hash, result[0].idInv)
+
+        }
+
+    }).then(result => {
+
+        return deleteCodigoByIdInv(result.idInv);
+
+    }).then(result => {
+
+        console.log("Reseteo de clave realizado con éxito. Registro de código borrado.")
+        return res.status(201).send();
+
+    }).catch(err => {
+
+        console.log("Algo ha ido mal.");
+        return next(err);
 
     });
 
@@ -276,16 +199,16 @@ loginRouter.post('/checkLogin', validLogin, (req, res) => {
 
         algorithm: 'HS256',
         //Units: seconds
-        expiresIn: 300,
+        expiresIn: 600,
         subject: req.idInv.toString()
 
     });
 
-    res.send({
+    return res.send({
 
         idToken: jwtBearerToken,
         idInv: req.idInv,
-        isAdmin: false,
+        isAdmin: req.isAdmin,
         email: req.email,
         hashedPass: req.hashedPass
 
@@ -297,12 +220,14 @@ loginRouter.post('/checkLogin', validLogin, (req, res) => {
 
 loginRouter.post('/refreshAuth', validRefresh, (req, res) => {
 
+    console.log("req en refreshAuth", req);
+    
     let jwtBearerToken = jwt.sign({
 
     }, secretKey, {
 
         algorithm: 'HS256',
-        expiresIn: 300,
+        expiresIn: 600,
         subject: req.idInv.toString()
 
     });
@@ -311,7 +236,7 @@ loginRouter.post('/refreshAuth', validRefresh, (req, res) => {
 
         idToken: jwtBearerToken,
         idInv: req.idInv,
-        isAdmin: false,
+        isAdmin: req.isAdmin,
         email: req.email,
         hashedPass: req.hashedPass
 
@@ -326,40 +251,34 @@ loginRouter.post('/checkPassword', checkAuth, (req, res) => {
     const claveInput = req.body.clave;
     const idInv = req.decoded.sub;
 
-    db.get(`SELECT clave FROM investigadores WHERE id = ${idInv}`, (err, row) => {
+    getInvestigadorById(idInv).then(result => {
 
-        if (err) {
+        if (!result.length) {
 
-            console.log(err);
-            return res.status(500).send();
-
-        } else {
-
-            if (!row) {
-
-                console.log('Recurso no encontrado.');
-
-                return res.status(404).send();
-
-            }
-
-            const claveBD = row.clave;
-
-            const match = bcrypt.compareSync(claveInput, claveBD);
-
-            if (match) {
-
-                return res.send({ match });
-
-            } else {
-
-                return res.status(401).send();
-
-            }
+            throw new Error("Investigador no encontrado.");
 
         }
 
-    });
+        const claveBD = result[0].clave;
+
+        const match = bcrypt.compareSync(claveInput, claveBD);
+
+        if (match) {
+
+            return res.send({ match });
+
+        } else {
+
+            return res.status(401).send({message: "La clave no es correcta."});
+
+        }
+
+    }).catch(err => {
+
+        console.log("Algo ha ido mal.");
+        return next(err);
+
+    })
 
 });
 
