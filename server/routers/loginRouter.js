@@ -1,5 +1,5 @@
 const express = require('express');
-const { getCodGen, sendMail, checkIfMailExists, validSignUp, validLogin, validRefresh, checkAuth, secretKey } = require('../middleware/middleLogin');
+const { getCodGen, sendMail, validSignUp, validLogin, validRefresh, checkAuth, secretKey } = require('../middleware/middleLogin');
 const { registerInvestigador, getInvestigadorById, getInvestigadorByEmail, updateClave, addCodigoActivacion, getCodgenInfo, updateVerificacion, deleteCodigoByIdInv } = require('../sql/queries');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -9,7 +9,7 @@ const loginRouter = express.Router();
 
 //Validate if sign up data are valid
 
-loginRouter.post('/register', checkIfMailExists, validSignUp, (req, res, next) => {
+loginRouter.post('/register', validSignUp, (req, res, next) => {
 
     const investigador = req.body.investigador;
     //Generate hash for password
@@ -219,8 +219,6 @@ loginRouter.post('/checkLogin', validLogin, (req, res) => {
 //Generate new token, for page refreshing
 
 loginRouter.post('/refreshAuth', validRefresh, (req, res) => {
-
-    console.log("req en refreshAuth", req);
     
     let jwtBearerToken = jwt.sign({
 

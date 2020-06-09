@@ -57,4 +57,50 @@ const validInvestigador = (req, res, next) => {
 
 }
 
-module.exports = {checkIfInvExists, validInvestigador};
+const compareIdsInv = (req, res, next) => {
+    
+    console.log("Validando id del autor del borrado... ");
+
+    const idToken = req.decoded.sub;
+    //Primer caso cuando es un PUT, segundo caso cuando es un DELETE
+    const idInv = req.query.idInv;
+
+    if(idToken == idInv){
+
+        return next();
+
+    } else {
+
+        console.log("El investigador que borra no es él mismo.");
+
+        getInvestigadorById(idToken).then(result => {
+
+            if(!result.length){
+
+                return res.status(404).send({message: "Error 404 - Recurso no encontrado."});
+
+            }
+
+            if(result[0].isAdmin){
+
+                console.log("Pero es administrador/a.")
+                return next();
+
+            } else {
+
+                return res.status(401).send({message: "Error 401 - No tiene autorización para realizar la operación."});
+
+            }
+
+        }, err => {
+
+            console.log("Algo ha ido mal.");
+            return next(err);
+
+        });
+
+    }
+
+}
+
+module.exports = {checkIfInvExists, validInvestigador, compareIdsInv};

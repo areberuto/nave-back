@@ -1,5 +1,5 @@
 const express = require('express');
-const { checkIfInvExists, validInvestigador } = require('../middleware/middleInvestigadores');
+const { checkIfInvExists, validInvestigador, compareIdsInv } = require('../middleware/middleInvestigadores');
 const { checkAuth } = require('../middleware/middleLogin');
 const { getInvestigadores, getInvestigadorByEmail, getInvestigadorById, getClaveInvestigador, updateInvestigador, updateClave, deleteFenomenosByInv, deleteInvestigador } = require('../sql/queries');
 const bcrypt = require('bcryptjs');
@@ -17,7 +17,7 @@ investigadoresRouter.get('/', (req, res, next) => {
 
             if (!result.length) {
 
-                return res.send(result);
+                return res.status(404).send();
 
             }
 
@@ -145,7 +145,7 @@ investigadoresRouter.put('/updateInv', checkAuth, validInvestigador, checkIfInvE
 
     }, err => {
 
-        console.log(err);
+        console.log("Algo ha ido mal:", err);
         return next(err);
 
     });
@@ -154,9 +154,7 @@ investigadoresRouter.put('/updateInv', checkAuth, validInvestigador, checkIfInvE
 
 //Check previously that researcher exists
 
-investigadoresRouter.delete('/delete', checkAuth, checkIfInvExists, (req, res, next) => {
-
-    //First delete phenomena from researcher
+investigadoresRouter.delete('/delete', checkAuth, checkIfInvExists, compareIdsInv, (req, res, next) => {
 
     const idInv = req.query.idInv;
     

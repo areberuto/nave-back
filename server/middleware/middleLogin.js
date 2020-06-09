@@ -57,12 +57,6 @@ const sendMail = (email, codGen, olvidada = false) => {
 
 }
 
-const checkIfMailExists = (req, res, next) => {
-
-    
-
-}
-
 //Validación de los datos requeridos del investigador
 
 const validSignUp = (req, res, next) => {
@@ -203,7 +197,6 @@ const checkAuth = (req, res, next) => {
 
             else {
 
-                console.log(decoded);
                 req.decoded = decoded;
                 return next();
 
@@ -281,4 +274,4 @@ const validRefresh = (req, res, next) => {
 
 }
 
-module.exports = { getCodGen, sendMail, checkIfMailExists, validSignUp, validLogin, checkAuth, validRefresh, secretKey };
+module.exports = { getCodGen, sendMail, validSignUp, validLogin, checkAuth, validRefresh, secretKey };
