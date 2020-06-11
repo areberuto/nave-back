@@ -3,9 +3,9 @@ const { checkIfInvExists, validInvestigador, compareIdsInv } = require('../middl
 const { checkAuth } = require('../middleware/middleLogin');
 const { getInvestigadores, getInvestigadorByEmail, getInvestigadorById, getClaveInvestigador, updateInvestigador, updateClave, deleteFenomenosByInv, deleteInvestigador } = require('../sql/queries');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const investigadoresRouter = express.Router()
 
-let investigadoresRouter = express.Router()
+//GET
 
 investigadoresRouter.get('/', (req, res, next) => {
 
@@ -22,8 +22,6 @@ investigadoresRouter.get('/', (req, res, next) => {
             }
 
             const investigador = result[0];
-
-            //Para no enviar el hash de la clave
 
             delete investigador.clave;
 
@@ -49,8 +47,6 @@ investigadoresRouter.get('/', (req, res, next) => {
             }
 
             const investigador = result[0];
-
-            //Para no enviar el hash de la clave
 
             delete investigador.clave;
 
@@ -82,6 +78,8 @@ investigadoresRouter.get('/', (req, res, next) => {
 
 });
 
+//PUT
+
 investigadoresRouter.put('/updatePwd', checkAuth, checkIfInvExists, (req, res, next) => {
 
     const idInv = req.idInv;
@@ -109,8 +107,8 @@ investigadoresRouter.put('/updatePwd', checkAuth, checkIfInvExists, (req, res, n
 
         if (match) {
 
-            let salt = bcrypt.genSaltSync(10);
-            let hash = bcrypt.hashSync(newPwd, salt);
+            const salt = bcrypt.genSaltSync(10);
+            const hash = bcrypt.hashSync(newPwd, salt);
 
             return updateClave(hash, idInv);
 
@@ -152,13 +150,13 @@ investigadoresRouter.put('/updateInv', checkAuth, validInvestigador, checkIfInvE
 
 });
 
-//Check previously that researcher exists
+//DELETE
 
 investigadoresRouter.delete('/delete', checkAuth, checkIfInvExists, compareIdsInv, (req, res, next) => {
 
     const idInv = req.query.idInv;
     
-    deleteFenomenosByInv(idInv).then((result) => {
+    deleteFenomenosByInv(idInv).then(() => {
 
         console.log("Borrado de fenómenos - OK");
         return deleteInvestigador(idInv);

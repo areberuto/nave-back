@@ -1,6 +1,6 @@
 const express = require('express');
 const { validFenomeno, compareIdsFen, compareIdsComentario, validComentario } = require('../middleware/middleFenomenos');
-const { getFenomenos, getFenomenosModerar, getFenModById, getComentarios, getCategorias, getInvestigadorById, postFenomeno, postComentario, aprobarFenomeno, updateFenomeno, deleteFenomeno, deleteComentario } = require('../sql/queries');
+const { getFenomenos, getFenomenosModerar, getComentarios, getCategorias, getInvestigadorById, postFenomeno, postComentario, aprobarFenomeno, updateFenomeno, deleteFenomeno, deleteComentario } = require('../sql/queries');
 const { checkAuth } = require('../middleware/middleLogin');
 const fenomenosRouter = express.Router();
 
@@ -162,14 +162,14 @@ fenomenosRouter.put('/aprobar', checkAuth, (req, res, next) => {
 
         if (!result.length) {
 
-            const msg = "Erro 404 - Investigador no encontrado.";
+            const msg = "Error 404 - Investigador no encontrado.";
             throw new Error(msg);
 
         }
 
         if (result[0].isAdmin) {
 
-            return getFenModById(idFen);
+            return getFenomenosModerar(idFen);
 
         } else {
 
@@ -222,11 +222,9 @@ fenomenosRouter.put('/', checkAuth, validFenomeno, compareIdsFen, (req, res, nex
 
 //DELETE
 
-//Validate token first
-
 fenomenosRouter.delete('/', checkAuth, compareIdsFen, (req, res, next) => {
 
-    let id = Number(req.query.id);
+    const id = Number(req.query.id);
 
     deleteFenomeno(id).then((result) => {
 
@@ -244,7 +242,7 @@ fenomenosRouter.delete('/', checkAuth, compareIdsFen, (req, res, next) => {
 
 fenomenosRouter.delete('/comentarios', checkAuth, compareIdsComentario, (req, res, next) => {
 
-    let id = Number(req.query.id);
+    const id = Number(req.query.id);
 
     deleteComentario(id).then(() => {
 

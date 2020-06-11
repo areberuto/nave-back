@@ -7,20 +7,14 @@ const loginRouter = express.Router();
 
 //POST
 
-//Validate if sign up data are valid
-
 loginRouter.post('/register', validSignUp, (req, res, next) => {
 
     const investigador = req.body.investigador;
-    //Generate hash for password
-
     const salt = bcrypt.genSaltSync(10);
     const hash = bcrypt.hashSync(investigador.clave, salt);
 
     registerInvestigador(investigador, hash).then(result => {
 
-        //Cuando se ejecuta el then, el stack ha liberado las variables del bloque porque es asíncrono.
-        console.log("Inserción realizada con éxito.");
         return getInvestigadorByEmail(result.correo);
 
     }, err => {
@@ -40,7 +34,6 @@ loginRouter.post('/register', validSignUp, (req, res, next) => {
 
     }).then(result => {
 
-        console.log("Inserción de código realizada con éxito.");
         sendMail(result.email, result.codGen);
         return res.status(201).send();
 
@@ -52,8 +45,6 @@ loginRouter.post('/register', validSignUp, (req, res, next) => {
     });
 
 });
-
-//Lógica de verificación
 
 loginRouter.post("/verify", (req, res, next) => {
 
@@ -81,7 +72,6 @@ loginRouter.post("/verify", (req, res, next) => {
 
     }).then(idInv => {
 
-        console.log("Verificación actualizada.")
         return deleteCodigoByIdInv(idInv);
 
     }).then(result => {
@@ -96,8 +86,6 @@ loginRouter.post("/verify", (req, res, next) => {
     });
 
 });
-
-//Enviar correo para restablecer contraseña
 
 loginRouter.post('/pwOlvidada', (req, res, next) => {
 
@@ -137,8 +125,6 @@ loginRouter.post('/pwOlvidada', (req, res, next) => {
 
 });
 
-//Reseteo de la contraseña
-
 loginRouter.post("/resetPwd", (req, res) => {
 
     if (!req.body.tmpClave || !req.body.tmpClaveSHA) {
@@ -173,7 +159,7 @@ loginRouter.post("/resetPwd", (req, res) => {
 
     }).then(result => {
 
-        console.log("Reseteo de clave realizado con éxito. Registro de código borrado.")
+        console.log("Reseteo de clave realizado con éxito. Registro de código borrado.");
         return res.status(201).send();
 
     }).catch(err => {
@@ -184,8 +170,6 @@ loginRouter.post("/resetPwd", (req, res) => {
     });
 
 });
-
-//Validate email and password previous to sign in
 
 loginRouter.post('/checkLogin', validLogin, (req, res) => {
 

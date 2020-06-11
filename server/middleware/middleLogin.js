@@ -41,7 +41,7 @@ const sendMail = (email, codGen, olvidada = false) => {
 
     }
 
-    transporter.sendMail(mailOptions, function (error, info) {
+    transporter.sendMail(mailOptions, function(error, info) {
 
         if (error) {
 
@@ -74,14 +74,14 @@ const validSignUp = (req, res, next) => {
 
         } else {
 
-            res.status(400).send({message: "Error 400 - Hay datos incorrectos en relación al registro."});
+            res.status(400).send({ message: "Error 400 - Hay datos incorrectos en relación al registro." });
             return;
 
         }
 
     } else {
 
-        return res.status(400).send({message: "Error 400 - No se han proporcionado datos para el registro."});
+        return res.status(400).send({ message: "Error 400 - No se han proporcionado datos para el registro." });
 
     }
 
@@ -100,7 +100,7 @@ const validLogin = (req, res, next) => {
 
     } else {
 
-        return res.status(400).send({message: "Error 400 - Login inválido, faltan credenciales."});
+        return res.status(400).send({ message: "Error 400 - Login inválido, faltan credenciales." });
 
     }
 
@@ -108,7 +108,7 @@ const validLogin = (req, res, next) => {
 
         if (!result.length) {
 
-            return res.status(404).send({message: "Error 404 - Recurso no encontrado."});
+            return res.status(404).send({ message: "Error 404 - Recurso no encontrado." });
 
         }
 
@@ -134,13 +134,13 @@ const validLogin = (req, res, next) => {
 
             } else {
 
-                return res.status(401).send({message: "Error 401 - Cuenta no verificada."});
+                return res.status(401).send({ message: "Error 401 - Cuenta no verificada." });
 
             }
 
         } else {
 
-            return res.status(401).send({message: "Error 401 - Clave incorrecta."});
+            return res.status(401).send({ message: "Error 401 - Clave incorrecta." });
 
         }
 
@@ -189,12 +189,12 @@ const checkAuth = (req, res, next) => {
 
             if (err) {
 
-                return res.status(401).send({message: "El token de sesión es inválido o ha expirado. Vuelve a iniciar sesión con tus credenciales."});
+                return res.status(401).send({ message: "El token de sesión es inválido o ha expirado. Vuelve a iniciar sesión con tus credenciales." });
 
             }
 
             //Si es válido, damos permiso para continuar
-
+            
             else {
 
                 req.decoded = decoded;
@@ -210,7 +210,7 @@ const checkAuth = (req, res, next) => {
 
     else {
 
-        return res.status(401).send({message: "Error 401 - Falta token de autorización."});
+        return res.status(401).send({ message: "Error 401 - Falta token de autorización." });
 
     }
 
@@ -223,7 +223,7 @@ const validRefresh = (req, res, next) => {
 
     if (req.body.email == "" || req.body.hashedPass == "") {
 
-        return res.status(400).send({message: "Error 400 - Faltan credenciales para renovar la sesión."});
+        return res.status(400).send({ message: "Error 400 - Faltan credenciales para renovar la sesión." });
 
     }
 
@@ -261,7 +261,7 @@ const validRefresh = (req, res, next) => {
 
             console.log("Clave incorrecta para el email.");
 
-            return res.status(401).send({message: "La clave no es correcta."});
+            return res.status(401).send({ message: "La clave no es correcta." });
 
         }
 

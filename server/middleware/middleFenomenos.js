@@ -8,9 +8,9 @@ const validFenomeno = (req, res, next) => {
 
     if (req.body.fenomeno) {
 
-        let fenomeno = req.body.fenomeno;
+        const fenomeno = req.body.fenomeno;
 
-        let isInvalid = (!fenomeno.investigadorId || !fenomeno.titulo || !fenomeno.descripcionCorta || !fenomeno.contenido || !fenomeno.latitud || !fenomeno.longitud || !fenomeno.fecha || !fenomeno.ciudad || !fenomeno.pais);
+        const isInvalid = (!fenomeno.investigadorId || !fenomeno.titulo || !fenomeno.descripcionCorta || !fenomeno.contenido || !fenomeno.latitud || !fenomeno.longitud || !fenomeno.fecha || !fenomeno.ciudad || !fenomeno.pais);
 
         if (!isInvalid) {
 
@@ -31,15 +31,17 @@ const validFenomeno = (req, res, next) => {
 
 }
 
+//Validación del comentario
+
 const validComentario = (req, res, next) => {
 
     console.log("Validando datos del comentario... ");
 
     if (req.body.comentario) {
 
-        let comentario = req.body.comentario;
+        const comentario = req.body.comentario;
 
-        let isInvalid = (!comentario.investigadorId || !comentario.fenomenoId || !comentario.comentario);
+        const isInvalid = (!comentario.investigadorId || !comentario.fenomenoId || !comentario.comentario);
 
         if (!isInvalid) {
 
@@ -60,13 +62,15 @@ const validComentario = (req, res, next) => {
 
 }
 
+//Comparación de Id del investigador que hace petición y la idInv del fenómeno
+
 const compareIdsFen = (req, res, next) => {
 
     console.log("Validando que el fenómeno sea de su investigador... ");
 
-    let idToken = req.decoded.sub;
-    //Primer caso cuando es un PUT, segundo caso cuando es un DELETE
-    let idInvFen = req.query.id || req.fenomeno.investigadorId;
+    const idToken = req.decoded.sub;
+    //Primer caso cuando es un DELETE, segundo caso cuando es un PUT
+    const idInvFen = req.query.id || req.fenomeno.investigadorId;
 
     if (idToken == idInvFen) {
 
@@ -85,6 +89,7 @@ const compareIdsFen = (req, res, next) => {
 
             if (result[0].isAdmin) {
 
+                console.log("Tiene permisos de administrador.");
                 return next();
 
             } else {
@@ -103,13 +108,15 @@ const compareIdsFen = (req, res, next) => {
 
 }
 
+//Compara id del investigador que hace la petición y del idInv del comentario
+
 const compareIdsComentario = (req, res, next) => {
 
     console.log("Validando que el comentario sea de su investigador... ");
 
-    let idToken = req.decoded.sub;
+    const idToken = req.decoded.sub;
 
-    let idInvCom = req.query.comIdInv || req.comentario.investigadorId;
+    const idInvCom = req.query.comIdInv || req.comentario.investigadorId;
 
     if (idToken == idInvCom) {
 

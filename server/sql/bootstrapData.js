@@ -1,6 +1,8 @@
 const { dropTables, createTables, seedTables } = require('./queries');
 const { con } = require('./mysql');
 
+//Seed database with original data - Restablecer los datos originales de la base de datos.
+
 dropTables().then(msg => {
 
     console.log(msg);

@@ -32,9 +32,9 @@ const validInvestigador = (req, res, next) => {
 
     if (req.body.investigador) {
 
-        let investigador = req.body.investigador;
+        const investigador = req.body.investigador;
 
-        let isInvalid = (!investigador.correo || !investigador.nombre || !investigador.apellido1 || !investigador.apellido2 || !investigador.organismo || !investigador.genero || !investigador.ciudad || !investigador.fechaNacimiento);
+        const isInvalid = (!investigador.correo || !investigador.nombre || !investigador.apellido1 || !investigador.apellido2 || !investigador.organismo || !investigador.genero || !investigador.ciudad || !investigador.fechaNacimiento);
 
         if (!isInvalid) {
 
@@ -57,12 +57,14 @@ const validInvestigador = (req, res, next) => {
 
 }
 
+//Compara la id a la hora de borrar un investigador: sólo válido cuando se borra alguien a sí mismo
+//o cuando lo hace un administrador.
+
 const compareIdsInv = (req, res, next) => {
     
     console.log("Validando id del autor del borrado... ");
 
     const idToken = req.decoded.sub;
-    //Primer caso cuando es un PUT, segundo caso cuando es un DELETE
     const idInv = req.query.idInv;
 
     if(idToken == idInv){

@@ -1,6 +1,6 @@
 const { con } = require('./mysql');
 
-//Drops, creates, inserts para el arranque
+//Drop, create, insert queries.
 
 const dropCategorias = () => new Promise(function(resolve, reject) {
 
@@ -83,7 +83,7 @@ const dropCodigos = () => new Promise(function(resolve, reject) {
 
 const createCodigos = () => new Promise(function(resolve, reject) {
 
-    const sql = "CREATE TABLE IF NOT EXISTS codigos_activacion (id MEDIUMINT NOT NULL PRIMARY KEY AUTO_INCREMENT, idInv SMALLINT NOT NULL, email VARCHAR(50) NOT NULL, codigo VARCHAR(50) NOT NULL)";
+    const sql = "CREATE TABLE IF NOT EXISTS codigos_activacion (id MEDIUMINT NOT NULL PRIMARY KEY AUTO_INCREMENT, idInv MEDIUMINT NOT NULL, email VARCHAR(50) NOT NULL, codigo VARCHAR(50) NOT NULL, FOREIGN KEY(idInv) REFERENCES investigadores(id))";
 
     con.query(sql, function(err, result) {
 
@@ -278,6 +278,8 @@ const seedFenomenos = () => new Promise(function(resolve, reject) {
     });
 });
 
+//Full drops, creates, and inserts queries
+
 const dropTables = () => {
 
     return dropComentarios().then(() => {
@@ -318,16 +320,16 @@ const createTables = () => {
     return createCategorias().then(() => {
 
         console.log("Create categorías - OK");
-        return createCodigos();
-
-    }).then(() => {
-
-        console.log("Create códigos_activación - OK");
         return createInvestigadores();
 
     }).then(() => {
 
         console.log("Create investigadores - OK");
+        return createCodigos();
+
+    }).then(() => {
+
+        console.log("Create códigos_activación - OK");
         return createFenomenos();
 
     }).then(() => {
@@ -378,13 +380,15 @@ const seedTables = () => {
 
 }
 
-//Fenomenos
+//GET
 
 const getFenomenos = (queryParams) => {
 
     let sql = "SELECT f.*, i.nombre as nombreInvestigador, i.apellido1 as apellidoInv1, i.apellido2 as apellidoInv2, c.categoria, c.id as categoriaId FROM fenomenos as f INNER JOIN investigadores as i ON f.investigadorId = i.id INNER JOIN categorias as c ON f.categoria = c.id WHERE f.aprobado = 1";
 
     let values = [];
+
+    //Only add search if user requests it - Sólo se añade la parte de búsqueda si el usuario lo pide.
 
     if (Object.keys(queryParams).length != 0) {
 
@@ -496,9 +500,6 @@ const getFenomenos = (queryParams) => {
 
     sql += " ORDER BY PUBLICADO DESC";
 
-    console.log(sql);
-    console.log(values);
-
     return new Promise(function(resolve, reject) {
 
         con.query(sql, values, function(err, result) {
@@ -519,7 +520,8 @@ const getFenomenos = (queryParams) => {
 
 };
 
-//TODO AQUI!
+//Since only admin can see pending phenomena, we use a separate querie.
+//Puesto que solo el admin puede ver los fenómenos pendientes de moderar, usamos una querie aparte.
 
 const getFenomenosModerar = (idFen = undefined) => {
 
@@ -529,38 +531,15 @@ const getFenomenosModerar = (idFen = undefined) => {
 
     if (idFen) {
 
-        sql += `AND f.id = ?`
+        sql += ` AND f.id = ?`
         values.push(idFen);
 
     }
 
     sql += " ORDER BY FECHA ASC";
 
-    return new Promise(function(resolve, reject) {
-
-        con.query(sql, values, function(err, result) {
-
-            if (err) {
-
-                reject(new Error(err));
-
-            } else {
-
-                resolve(result);
-
-            }
-
-        });
-
-    });
-
-};
-
-const getFenModById = (idFen) => {
-
-    const values = [idFen];
-
-    const sql = "SELECT f.*, i.nombre as nombreInvestigador, i.apellido1 as apellidoInv1, i.apellido2 as apellidoInv2, c.categoria, c.id as categoriaId FROM fenomenos as f INNER JOIN investigadores as i ON f.investigadorId = i.id INNER JOIN categorias as c ON f.categoria = c.id WHERE f.aprobado = 0 AND f.id = ?";
+    console.log("idFen", idFen);
+    console.log("sql", sql);
 
     return new Promise(function(resolve, reject) {
 
@@ -608,43 +587,6 @@ const getComentarios = (idFen) => {
 
 };
 
-const postComentario = (comentario) => {
-
-    const anio = new Date().getFullYear();
-    const mes = new Date().getMonth();
-    const dia = new Date().getDate();
-    const hora = new Date().getHours();
-    const minutos = new Date().getMinutes();
-    const segundos = new Date().getSeconds();
-
-    const fecha = new Date(anio, mes, dia, hora, minutos, segundos);
-
-    comentario.fecha = fecha;
-
-    const values = [comentario.investigadorId, comentario.fenomenoId, comentario.fecha, comentario.comentario];
-
-    const sql = "INSERT INTO comentarios (investigadorId, fenomenoId, fecha, comentario) VALUES (?, ?, ?, ?)";
-
-    return new Promise(function(resolve, reject) {
-
-        con.query(sql, values, function(err, result) {
-
-            if (err) {
-
-                reject(new Error(err));
-
-            } else {
-
-                resolve(result);
-
-            }
-
-        });
-
-    });
-
-};
-
 const getCategorias = () => {
 
     return new Promise(function(resolve, reject) {
@@ -665,171 +607,6 @@ const getCategorias = () => {
     });
 
 }
-
-const postFenomeno = fenomeno => {
-
-    const anio = new Date().getFullYear();
-    const mes = new Date().getMonth();
-    const dia = new Date().getDate();
-    const hora = new Date().getHours();
-    const minutos = new Date().getMinutes();
-    const segundos = new Date().getSeconds();
-
-    const fecha = new Date(anio, mes, dia, hora, minutos, segundos);
-    fenomeno.publicado = fecha;
-
-    const values = [fenomeno.investigadorId, fenomeno.titulo, fenomeno.descripcionCorta, fenomeno.contenido, fenomeno.fecha, fenomeno.publicado, fenomeno.ciudad, fenomeno.pais, fenomeno.categoriaId, fenomeno.latitud, fenomeno.longitud];
-
-    const sql = `INSERT INTO fenomenos (investigadorId, titulo, descripcionCorta, contenido, fecha, publicado, ciudad, pais, categoria, latitud, longitud) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
-    return new Promise(function(resolve, reject) {
-
-        con.query(sql, values, function(err, result) {
-
-            if (err) {
-
-                reject(new Error(err));
-
-            } else {
-
-                resolve(result);
-
-            }
-
-        });
-
-    });
-
-};
-
-const updateFenomeno = fenomeno => {
-
-    const values = [fenomeno.categoriaId, fenomeno.titulo, fenomeno.descripcionCorta, fenomeno.contenido, fenomeno.fecha, fenomeno.ciudad, fenomeno, pais, fenomeno.latitud, fenomeno.longitud, fenomeno.id];
-
-    const sql = `UPDATE fenomenos SET categoria = ?, titulo = ?, descripcionCorta = ?, contenido = ?, fecha = ?, ciudad = ?, pais = ?, latitud = ?, longitud = ? WHERE id = ?`;
-
-    return new Promise(function(resolve, reject) {
-
-        con.query(sql, values, function(err, result) {
-
-            if (err) {
-
-                reject(new Error(err));
-
-            } else {
-
-                resolve(result);
-
-            }
-
-        });
-
-    });
-
-};
-
-const aprobarFenomeno = idFen => {
-
-    const values = [idFen];
-
-    const sql = `UPDATE fenomenos SET aprobado = 1 WHERE id = ?`;
-
-    return new Promise(function(resolve, reject) {
-
-        con.query(sql, values, function(err, result) {
-
-            if (err) {
-
-                reject(new Error(err));
-
-            } else {
-
-                resolve(result);
-
-            }
-
-        });
-
-    });
-
-};
-
-const deleteFenomeno = id => {
-
-    const values = [id];
-    const sql = `DELETE FROM fenomenos WHERE id = ?`;
-
-    return new Promise(function(resolve, reject) {
-
-        con.query(sql, values, function(err, result) {
-
-            if (err) {
-
-                reject(new Error(err));
-
-            } else {
-
-                resolve(result);
-
-            }
-
-        });
-
-    });
-
-};
-
-const deleteFenomenosByInv = idInv => {
-
-    const values = [idInv];
-    const sql = `DELETE FROM fenomenos WHERE investigadorId  = ?`;
-
-    return new Promise(function(resolve, reject) {
-
-        con.query(sql, values, function(err, result) {
-
-            if (err) {
-
-                reject(new Error(err));
-
-            } else {
-
-                resolve(result);
-
-            }
-
-        });
-
-    });
-
-};
-
-const deleteComentario = id => {
-
-    const values = [id];
-    const sql = `DELETE FROM comentarios WHERE id = ?`;
-
-    return new Promise(function(resolve, reject) {
-
-        con.query(sql, values, function(err, result) {
-
-            if (err) {
-
-                reject(new Error(err));
-
-            } else {
-
-                resolve(result);
-
-            }
-
-        });
-
-    });
-
-};
-
-//Investigadores
 
 const getInvestigadores = () => {
 
@@ -930,11 +707,134 @@ const getClaveInvestigador = (idInv) => {
 
 }
 
+const getCodgenInfo = codGen => {
+
+    const sql = `SELECT * FROM codigos_activacion WHERE codigo = ?`;
+    const values = [codGen];
+
+    return new Promise((resolve, reject) => {
+
+        con.query(sql, values, (err, result) => {
+
+            if (err) {
+
+                reject(err);
+
+            }
+
+            resolve(result, codGen);
+
+        });
+
+    });
+
+}
+
+const isValidRefresh = (correo) => {
+
+    const values = [correo];
+    const sql = `SELECT * FROM investigadores WHERE correo = ?`;
+
+    return new Promise(function(resolve, reject) {
+
+        con.query(sql, values, function(err, result) {
+
+            if (err) {
+
+                reject(err);
+
+            } else {
+
+                resolve(result);
+
+            }
+
+        });
+
+    });
+
+}
+
+//POST
+
+const postComentario = (comentario) => {
+
+    const anio = new Date().getFullYear();
+    const mes = new Date().getMonth();
+    const dia = new Date().getDate();
+    const hora = new Date().getHours();
+    const minutos = new Date().getMinutes();
+    const segundos = new Date().getSeconds();
+
+    const fecha = new Date(anio, mes, dia, hora, minutos, segundos);
+
+    comentario.fecha = fecha;
+
+    const sql = "INSERT INTO comentarios (investigadorId, fenomenoId, fecha, comentario) VALUES (?, ?, ?, ?)";
+
+    const values = [comentario.investigadorId, comentario.fenomenoId, comentario.fecha, comentario.comentario];
+
+    return new Promise(function(resolve, reject) {
+
+        con.query(sql, values, function(err, result) {
+
+            if (err) {
+
+                reject(new Error(err));
+
+            } else {
+
+                resolve(result);
+
+            }
+
+        });
+
+    });
+
+};
+
+const postFenomeno = fenomeno => {
+
+    const anio = new Date().getFullYear();
+    const mes = new Date().getMonth();
+    const dia = new Date().getDate();
+    const hora = new Date().getHours();
+    const minutos = new Date().getMinutes();
+    const segundos = new Date().getSeconds();
+
+    const fecha = new Date(anio, mes, dia, hora, minutos, segundos);
+    fenomeno.publicado = fecha;
+
+    const sql = `INSERT INTO fenomenos (investigadorId, titulo, descripcionCorta, contenido, fecha, publicado, ciudad, pais, categoria, latitud, longitud) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    const values = [fenomeno.investigadorId, fenomeno.titulo, fenomeno.descripcionCorta, fenomeno.contenido, fenomeno.fecha, fenomeno.publicado, fenomeno.ciudad, fenomeno.pais, fenomeno.categoriaId, fenomeno.latitud, fenomeno.longitud];
+    
+    return new Promise(function(resolve, reject) {
+
+        con.query(sql, values, function(err, result) {
+
+            if (err) {
+
+                reject(new Error(err));
+
+            } else {
+
+                resolve(result);
+
+            }
+
+        });
+
+    });
+
+};
+
 const registerInvestigador = (investigador, hash) => {
 
-    const values = [investigador.correo, hash, investigador.nombre, investigador.apellido1, investigador.apellido2, investigador.organismo, investigador.genero, investigador.ciudad, investigador.pais, investigador.fechaNacimiento, 0];
-
     const sql = `INSERT INTO investigadores (correo, clave, nombre, apellido1, apellido2, organismo, genero, ciudad, pais, fechaNacimiento, verificado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    const values = [investigador.correo, hash, investigador.nombre, investigador.apellido1, investigador.apellido2, investigador.organismo, investigador.genero, investigador.ciudad, investigador.pais, investigador.fechaNacimiento, 0];
 
     return new Promise(function(resolve, reject) {
 
@@ -956,11 +856,63 @@ const registerInvestigador = (investigador, hash) => {
 
 }
 
+const addCodigoActivacion = (idInsert, email, codGen) => {
+
+    const sql = `INSERT INTO codigos_activacion (idInv, email, codigo) VALUES (?, ?, ?)`;
+    const values = [idInsert, email, codGen];
+
+    return new Promise(function(resolve, reject) {
+
+        con.query(sql, values, function(err, result) {
+
+            if (err) {
+
+                reject(err);
+
+            }
+
+            resolve({ email, codGen });
+
+        });
+
+    });
+
+}
+
+//PUT
+
+const updateFenomeno = fenomeno => {
+
+    const sql = `UPDATE fenomenos SET categoria = ?, titulo = ?, descripcionCorta = ?, contenido = ?, fecha = ?, ciudad = ?, pais = ?, latitud = ?, longitud = ? WHERE id = ?`;
+
+    const values = [fenomeno.categoriaId, fenomeno.titulo, fenomeno.descripcionCorta, fenomeno.contenido, fenomeno.fecha, fenomeno.ciudad, fenomeno, pais, fenomeno.latitud, fenomeno.longitud, fenomeno.id];
+
+    return new Promise(function(resolve, reject) {
+
+        con.query(sql, values, function(err, result) {
+
+            if (err) {
+
+                reject(new Error(err));
+
+            } else {
+
+                resolve(result);
+
+            }
+
+        });
+
+    });
+
+};
+
 const updateInvestigador = (investigador) => {
+
+    const sql = `UPDATE investigadores SET correo = ?, nombre = ?, apellido1 = ?, apellido2 = ?, organismo = ?, genero = ?, ciudad = ?, pais = ?, fechaNacimiento = ? WHERE id = ?`;
 
     const values = [investigador.correo, investigador.nombre, investigador.apellido1, investigador.apellido2, investigador.organismo, investigador.genero, investigador.ciudad, investigador.pais, investigador.fechaNacimiento, investigador.id];
 
-    const sql = `UPDATE investigadores SET correo = ?, nombre = ?, apellido1 = ?, apellido2 = ?, organismo = ?, genero = ?, ciudad = ?, pais = ?, fechaNacimiento = ? WHERE id = ?`;
 
     return new Promise(function(resolve, reject) {
 
@@ -984,8 +936,8 @@ const updateInvestigador = (investigador) => {
 
 const updateClave = (hash, idInv) => {
 
-    const values = [hash, idInv];
     const sql = `UPDATE INVESTIGADORES SET clave = ? WHERE ID = ?`;
+    const values = [hash, idInv];
 
     return new Promise(function(resolve, reject) {
 
@@ -1006,6 +958,131 @@ const updateClave = (hash, idInv) => {
     });
 
 }
+
+const aprobarFenomeno = idFen => {
+
+    const sql = `UPDATE fenomenos SET aprobado = 1 WHERE id = ?`;
+    const values = [idFen];
+
+    return new Promise(function(resolve, reject) {
+
+        con.query(sql, values, function(err, result) {
+
+            if (err) {
+
+                reject(new Error(err));
+
+            } else {
+
+                resolve(result);
+
+            }
+
+        });
+
+    });
+
+};
+
+const updateVerificacion = (idInv) => {
+
+    const sql = `UPDATE INVESTIGADORES SET verificado = 1 WHERE ID = ?`;
+    const values = [idInv];
+
+    return new Promise(function(resolve, reject) {
+
+        con.query(sql, values, function(err, result) {
+
+            if (err) {
+
+                reject(err);
+
+            }
+
+            resolve(idInv);
+
+        });
+
+    });
+
+}
+
+//DELETE
+
+const deleteFenomeno = id => {
+
+    const sql = `DELETE FROM fenomenos WHERE id = ?`;
+    const values = [id];
+
+    return new Promise(function(resolve, reject) {
+
+        con.query(sql, values, function(err, result) {
+
+            if (err) {
+
+                reject(new Error(err));
+
+            } else {
+
+                resolve(result);
+
+            }
+
+        });
+
+    });
+
+};
+
+const deleteFenomenosByInv = idInv => {
+
+    const sql = `DELETE FROM fenomenos WHERE investigadorId  = ?`;
+    const values = [idInv];
+
+    return new Promise(function(resolve, reject) {
+
+        con.query(sql, values, function(err, result) {
+
+            if (err) {
+
+                reject(new Error(err));
+
+            } else {
+
+                resolve(result);
+
+            }
+
+        });
+
+    });
+
+};
+
+const deleteComentario = id => {
+
+    const sql = `DELETE FROM comentarios WHERE id = ?`;
+    const values = [id];
+
+    return new Promise(function(resolve, reject) {
+
+        con.query(sql, values, function(err, result) {
+
+            if (err) {
+
+                reject(new Error(err));
+
+            } else {
+
+                resolve(result);
+
+            }
+
+        });
+
+    });
+
+};
 
 const deleteInvestigador = idInv => {
 
@@ -1033,106 +1110,10 @@ const deleteInvestigador = idInv => {
 
 };
 
-//Middleware queries
-
-const isValidRefresh = (correo) => {
-
-    const values = [correo];
-    const sql = `SELECT * FROM investigadores WHERE correo = ?`;
-
-    return new Promise(function(resolve, reject) {
-
-        con.query(sql, values, function(err, result) {
-
-            if (err) {
-
-                reject(err);
-
-            } else {
-
-                resolve(result);
-
-            }
-
-        });
-
-    });
-
-}
-
-const getCodgenInfo = codGen => {
-
-    const values = [codGen];
-    const sql = `SELECT * FROM codigos_activacion WHERE codigo = ?`;
-
-    return new Promise((resolve, reject) => {
-
-        con.query(sql, values, (err, result) => {
-
-            if (err) {
-
-                reject(err);
-
-            }
-
-            resolve(result, codGen);
-
-        });
-
-    });
-
-}
-
-const addCodigoActivacion = (idInsert, email, codGen) => {
-
-    const values = [idInsert, email, codGen];
-    const sql = `INSERT INTO codigos_activacion (idInv, email, codigo) VALUES (?, ?, ?)`;
-
-    return new Promise(function(resolve, reject) {
-
-        con.query(sql, values, function(err, result) {
-
-            if (err) {
-
-                reject(err);
-
-            }
-
-            resolve({ email, codGen });
-
-        });
-
-    });
-
-}
-
-const updateVerificacion = (idInv) => {
-
-    const values = [idInv];
-    const sql = `UPDATE INVESTIGADORES SET verificado = 1 WHERE ID = ?`;
-
-    return new Promise(function(resolve, reject) {
-
-        con.query(sql, values, function(err, result) {
-
-            if (err) {
-
-                reject(err);
-
-            }
-
-            resolve(idInv);
-
-        });
-
-    });
-
-}
-
 const deleteCodigoByIdInv = idInv => {
 
-    const values = [idInv];
     const sql = `DELETE FROM codigos_activacion WHERE idInv = ?`;
+    const values = [idInv];
 
     return new Promise(function(resolve, reject) {
 
@@ -1152,4 +1133,4 @@ const deleteCodigoByIdInv = idInv => {
 
 }
 
-module.exports = { dropTables, createTables, seedTables, getComentarios, getFenomenos, getFenomenosModerar, getFenModById, getCategorias, postFenomeno, postComentario, aprobarFenomeno, updateFenomeno, deleteFenomeno, deleteFenomenosByInv, deleteComentario, getInvestigadores, getInvestigadorById, getInvestigadorByEmail, getClaveInvestigador, registerInvestigador, updateInvestigador, updateClave, deleteInvestigador, isValidRefresh, getCodgenInfo, addCodigoActivacion, updateVerificacion, deleteCodigoByIdInv }
+module.exports = { dropTables, createTables, seedTables, getComentarios, getFenomenos, getFenomenosModerar, getCategorias, postFenomeno, postComentario, aprobarFenomeno, updateFenomeno, deleteFenomeno, deleteFenomenosByInv, deleteComentario, getInvestigadores, getInvestigadorById, getInvestigadorByEmail, getClaveInvestigador, registerInvestigador, updateInvestigador, updateClave, deleteInvestigador, isValidRefresh, getCodgenInfo, addCodigoActivacion, updateVerificacion, deleteCodigoByIdInv }
