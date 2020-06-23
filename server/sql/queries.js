@@ -885,7 +885,7 @@ const updateFenomeno = fenomeno => {
 
     const sql = `UPDATE fenomenos SET categoria = ?, titulo = ?, descripcionCorta = ?, contenido = ?, fecha = ?, ciudad = ?, pais = ?, latitud = ?, longitud = ? WHERE id = ?`;
 
-    const values = [fenomeno.categoriaId, fenomeno.titulo, fenomeno.descripcionCorta, fenomeno.contenido, fenomeno.fecha, fenomeno.ciudad, fenomeno, pais, fenomeno.latitud, fenomeno.longitud, fenomeno.id];
+    const values = [fenomeno.categoriaId, fenomeno.titulo, fenomeno.descripcionCorta, fenomeno.contenido, fenomeno.fecha, fenomeno.ciudad, fenomeno.pais, fenomeno.latitud, fenomeno.longitud, fenomeno.id];
 
     return new Promise(function(resolve, reject) {
 
